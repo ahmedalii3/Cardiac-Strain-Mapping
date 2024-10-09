@@ -48,20 +48,29 @@ def count_manual_contours_in_patient_folder(patient_folder_path):
 
     return inner_contours_count, outer_contours_count, total_contours
 
+
 def count_manual_contours(base_path):
     # Path to the contours-manual directory
     contours_manual_path = os.path.join(base_path, 'contours-manual')
+
+    # Debug: Check if contours-manual directory exists
+    if not os.path.exists(contours_manual_path):
+        print(f"Error: The directory '{contours_manual_path}' does not exist.")
+        return
 
     # Loop through patient folders within contours-manual
     for patient_folder in os.listdir(contours_manual_path):
         patient_folder_path = os.path.join(contours_manual_path, patient_folder, 'IRCCI-expert')
 
+        # Debug: Check if the patient folder exists
         if os.path.isdir(patient_folder_path):
             inner_count, outer_count, total_count = count_manual_contours_in_patient_folder(patient_folder_path)
             print(f"Patient: {patient_folder}")
             print(f"  Total inner contours: {inner_count}")
             print(f"  Total outer contours: {outer_count}")
             print(f"  Total contours: {total_count}\n")
+        else:
+            print(f"Warning: The patient folder '{patient_folder_path}' does not exist.")
 
 # Replace 'your_base_path' with the actual path to the base directory containing 'contours-manual'
 base_path = '/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/SunnyBrook/SCD_ManualContours'

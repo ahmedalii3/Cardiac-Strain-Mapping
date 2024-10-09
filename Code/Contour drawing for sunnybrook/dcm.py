@@ -7,6 +7,7 @@ def load_dicom_image(dicom_path):
     """
     Load a DICOM image from the given path.
 
+    
     Args:
     dicom_path (str): Path to the DICOM file.
 
