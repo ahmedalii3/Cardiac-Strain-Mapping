@@ -94,7 +94,7 @@ IMG_DIR = "./Datasets"
 class cardiacdata(Dataset):
 
     def __init__(self):        
-        ptnum=str(123).zfill(3) 
+        ptnum=str(140).zfill(3) 
         img_dir = IMG_DIR + '/patient'+ptnum+'/patient'+ptnum+'_4d.nii.gz'
         dummy_img = sitk.GetArrayFromImage(sitk.ReadImage(img_dir))
         dummy_img = crop_img(dummy_img)
