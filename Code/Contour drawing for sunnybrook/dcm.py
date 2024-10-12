@@ -102,7 +102,7 @@ def plot_dicom_with_contours(dicom_image, original_contour_points, mirrored_cont
     plt.show()
 
 # Define the paths to the DICOM and contour files
-dicom_path = 'Data/SunnyBrook/SCD_IMAGES_01/SCD0000101/CINESAX_300/IM-0003-0048.dcm'
+dicom_path = 'Data/SunnyBrook/SCD_IMAGES_02/SCD0001001/CINESAX_300/IM-0003-0048.dcm'
 contour_path = 'Data/SunnyBrook/SCD_ManualContours/SC-HF-I-01/contours-manual/IRCCI-expert/IM-0001-0048-icontour-manual.txt'
 
 # Load the DICOM image
