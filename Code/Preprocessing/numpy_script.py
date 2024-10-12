@@ -42,27 +42,44 @@ class Prepocessing:
     
     def save(self,img,path):
         logging.info("Start saving image")
-        path_name = f"{path.dataset}/{path.patient}/{path.frame}.npy"
-        np.save(path_name,img)
+        path_name = f"{path['dataset']}_{path['patient']}_{path['series']}.npy"
+        np.save(os.path.join(path['root'], path_name),img)
         logging.info("Image saved")
 
     def preprocess(self,img: nib.Nifti1Image, mask: nib.Nifti1Image, path) -> None:
-        if self.check_size(img):
-            stacked = self.stack_mask(img,mask)
+        # if self.check_size(img):
+        #     stacked = self.stack_mask(img,mask)
+        #     self.save(stacked,path)
+        # else:
+        #     logging.error("Image size is not correct")  
+        stacked = self.stack_mask(img,mask)
+        for i in range(len(stacked)):
+            path['series'] = f"frame{path['frame']}#{i+1}"
             self.save(stacked,path)
-        else:
-            logging.error("Image size is not correct")  
 
 
 
 # Test the class
 preprocessor = Prepocessing()
 folder_path = "../../Data/ACDC/training/patient001/"
+patient = os.path.basename(folder_path[:-1])
 frame_gt_list = get_frame_gt_dict(folder_path)
 
 image = nib.load(str(frame_gt_list[0]['frame']['frame']))
 mask = nib.load(str(frame_gt_list[0]['gt']))
 
+
+frame_info = frame_gt_list[0]['gt'].split('_frame')[1]  # Split and get the part after 'frame'
+frame_number = frame_info.split('_')[0]  # Extract the frame number before '_gt' or file extension
+
 stacked = preprocessor.stack_mask(image,mask)
 print((stacked[0].shape))
 print((stacked[1].shape))
+path_info = {
+    "dataset": "ACDC",
+    "patient": patient,
+    "series": None,
+    "root" : folder_path,
+    "frame": frame_number
+}
+preprocessor.preprocess(image,mask,path_info)
