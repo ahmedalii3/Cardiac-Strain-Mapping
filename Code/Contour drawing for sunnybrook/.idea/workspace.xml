@@ -5,9 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c05bfe95-e00e-428b-9f50-39e84997b587" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/CountourDrawing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Wave/waveV2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Wave/waveV2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ContourDrawing.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,6 +32,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.ContourDrawing.executor": "Run",
     "Python.CountourDrawing.executor": "Run",
     "Python.waveV2.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
@@ -65,6 +64,7 @@
       <updated>1728743096705</updated>
       <workItem from="1728743097750" duration="6306000" />
       <workItem from="1729006671462" duration="264000" />
+      <workItem from="1729011582316" duration="379000" />
     </task>
     <servers />
   </component>
@@ -74,6 +74,7 @@
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/CountourDrawing_py$waveV2.coverage" NAME="waveV2 Coverage Results" MODIFIED="1729006923937" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../Wave" />
     <SUITE FILE_PATH="coverage/Contour_drawing_for_sunnybrook$CountourDrawing.coverage" NAME="CountourDrawing Coverage Results" MODIFIED="1728750618354" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Contour_drawing_for_sunnybrook$ContourDrawing.coverage" NAME="ContourDrawing Coverage Results" MODIFIED="1729011897925" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/CountourDrawing_py$CountourDrawing.coverage" NAME="CountourDrawing Coverage Results" MODIFIED="1729006676466" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
