@@ -1,6 +1,7 @@
 .DS_Store
 Data/ACDC
 Data/SunnyBrook
+Data/SunnyBrook dataset
 Code/Segmentation/cardiac_cine_mri_segmentation/Datasets
 Code/Segmentation/cine_Segmenation/Datasets
 Code/Segmentation/cardiac_cine_mri_segmentation
