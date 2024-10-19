@@ -10,7 +10,7 @@ class Wave_Generator():
         # Default self.parameters
         self.param = {
             'meshsize': 220,
-            'patchsize': 140,
+            'patchsize': 200,
             'windSpeed': 100,
             'winddir': 90,
             'rng': 13,
@@ -18,7 +18,7 @@ class Wave_Generator():
             'g': 9.81,
             'xLim': [-10, 10],
             'yLim': [-10, 10],
-            'zLim': [-1e-4 * 2, 1e-4 * 2]
+            'zLim': [-1e-5 * 2, 1e-5 * 2]
         }
 
         self.presetModes = {
@@ -100,7 +100,7 @@ class Wave_Generator():
             return surf,
         
 
-        ani = FuncAnimation(fig, update, frames=np.linspace(0, 10, 1000), blit=False)
+        ani = FuncAnimation(fig, update, frames=np.linspace(0, 10, 100), blit=False)
         plt.show()
 
 # wave = Wave_Generator()
