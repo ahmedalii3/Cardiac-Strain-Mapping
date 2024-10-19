@@ -13,7 +13,7 @@ os.chdir(os.path.dirname(__file__)) #change working directory to current directo
 
 
 
-class wave_POC:
+class Apply_Displacement:
     def __init__(self):
         self.image_path = "SheppLogan_Phantom.svg.png"
         self.image = None
@@ -110,5 +110,5 @@ class wave_POC:
         return self.image
 
 # Initialize and run the plot with wave displacements
-wave_POC = wave_POC()
+wave_POC = Apply_Displacement()
 wave_POC.plot_wave_POC()
