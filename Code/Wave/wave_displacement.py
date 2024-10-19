@@ -34,7 +34,7 @@ class Apply_Displacement:
         displaced_image = cv2.remap(image, x_new, y_new, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)
         return displaced_image
 
-    def plot_wave_POC(self):
+    def plot(self):
         fig = plt.figure(figsize=(20, 10))
 
         # Setup subplots
@@ -110,5 +110,5 @@ class Apply_Displacement:
         return self.image
 
 # Initialize and run the plot with wave displacements
-wave_POC = Apply_Displacement()
-wave_POC.plot_wave_POC()
+displaced_image = Apply_Displacement()
+displaced_image.plot()
