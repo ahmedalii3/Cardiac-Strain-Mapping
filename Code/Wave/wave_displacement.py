@@ -119,7 +119,7 @@ class Apply_Displacement:
 
 
         # Animate the wave and displacements
-        ani = FuncAnimation(fig, update, frames=np.linspace(0, 100, 300), blit=False, repeat=False)
+        ani = FuncAnimation(fig, update, frames=np.linspace(0, 100, 400), blit=False, repeat=False)
         plt.tight_layout()
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)
