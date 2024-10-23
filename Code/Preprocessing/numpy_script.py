@@ -47,15 +47,14 @@ class Prepocessing:
         logging.info("Image saved")
 
     def preprocess(self,img: nib.Nifti1Image, mask: nib.Nifti1Image, path) -> None:
-        # if self.check_size(img):
-        #     stacked = self.stack_mask(img,mask)
-        #     self.save(stacked,path)
-        # else:
-        #     logging.error("Image size is not correct")  
-        stacked = self.stack_mask(img,mask)
-        for i in range(len(stacked)):
-            path['series'] = f"frame{path['frame']}#{i+1}"
-            self.save(stacked,path)
+        if self.check_size(img):
+            stacked = self.stack_mask(img,mask)
+            for i in range(len(stacked)):
+                path['series'] = f"frame{path['frame']}#{i+1}"
+                self.save(stacked,path)
+        else:
+            logging.error("Image size is not correct")  
+        
 
 
 

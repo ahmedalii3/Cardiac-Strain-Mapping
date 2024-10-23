@@ -27,8 +27,8 @@ class Apply_Displacement:
         x, y = np.meshgrid(np.arange(width), np.arange(height))
 
         # Apply displacement (scale the displacements for more visible effect)
-        x_new = (x + x_displacement*10000).astype(np.float32)
-        y_new = (y + y_displacement*10000).astype(np.float32)
+        x_new = (x + x_displacement).astype(np.float32)
+        y_new = (y + y_displacement).astype(np.float32)
 
         # Warp the image using remap for both x and y displacements
         displaced_image = cv2.remap(image, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
@@ -88,8 +88,8 @@ class Apply_Displacement:
         def update(frame):
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Zx, Zy = np.gradient(Z)
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32)
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32)
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *10000
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *10000
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             nonlocal displaced_image, x_displaced_image, y_displaced_image  # To ensure displaced_image is updated across frames

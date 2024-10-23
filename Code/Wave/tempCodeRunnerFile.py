@@ -1,1 +1,0 @@
-ax_wave.set_title('3D Wave Surface')
