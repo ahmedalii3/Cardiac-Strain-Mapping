@@ -41,7 +41,7 @@ def load_nifti_manual(filename):
     return img_data
 
 # Load the .nii file manually
-filename = 'Data/ACDC/database/training/patient001/patient001_frame01.nii/CMD03Gate1.nii'
+filename = '/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_standardized/patient004/patient004_frame01.nii/DCM09Gate1.nii'
 img = load_nifti_manual(filename)
 
 # Display a slice of the image (middle slice)

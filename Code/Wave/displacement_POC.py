@@ -73,12 +73,12 @@ class Apply_Displacement:
         slope_y = 1.0
 
         # Case 1 -> nothing
-        slope_x_target = 1
-        slope_y_target = 1
+        # slope_x_target = 1
+        # slope_y_target = 1
 
         # Case 2 -> enlrage 
-        # slope_x_target = 2
-        # slope_y_target = 2
+        slope_x_target = 2
+        slope_y_target = 2
         
         # Case 3 -> shrink
         # slope_x_target = 0.5
