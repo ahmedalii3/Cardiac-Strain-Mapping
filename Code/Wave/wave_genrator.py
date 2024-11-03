@@ -103,5 +103,5 @@ class Wave_Generator():
         ani = FuncAnimation(fig, update, frames=np.linspace(0, 10, 100), blit=False)
         plt.show()
 
-wave = Wave_Generator()
-wave.init_gui()
+# wave = Wave_Generator()
+# wave.init_gui()

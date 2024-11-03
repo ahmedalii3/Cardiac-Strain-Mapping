@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cm
+from scipy.ndimage import gaussian_filter1d
 import cv2
 
 from wave_genrator import Wave_Generator
@@ -57,6 +58,7 @@ class Apply_Displacement:
 
         # Plot the initial data
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
+        Z = gaussian_filter1d(Z, sigma=10, axis=0)
         Zx, Zy = np.gradient(Z)
 
         x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)  # Scale by 50 for more visible effect
@@ -87,6 +89,7 @@ class Apply_Displacement:
         # Function to update the plots
         def update(frame):
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
+            Z = gaussian_filter1d(Z, sigma=10, axis=0)
             Zx, Zy = np.gradient(Z)
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *10000
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *10000
