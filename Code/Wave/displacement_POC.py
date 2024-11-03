@@ -66,35 +66,58 @@ class Apply_Displacement:
         x_displaced_image = self.apply_displacement(image, x_displacement, 0)
         y_displaced_image = self.apply_displacement(image, 0, y_displacement)
 
-
         height, width, _ = image.shape
         x, y = np.meshgrid(np.arange(width), np.arange(height))
-        slope_x = 1.0
-        slope_y = 1.0
+        '''
+        Ramp Function
+        '''
+        # slope_x = 1.0
+        # slope_y = 1.0
 
-        # Case 1 -> nothing
-        # slope_x_target = 1
-        # slope_y_target = 1
+        # # Case 1 -> nothing
+        # # slope_x_target = 1
+        # # slope_y_target = 1
 
-        # Case 2 -> enlrage 
-        slope_x_target = 2
-        slope_y_target = 2
+        # # Case 2 -> enlrage 
+        # slope_x_target = 2
+        # slope_y_target = 2
         
-        # Case 3 -> shrink
-        # slope_x_target = 0.5
-        # slope_y_target = 0.5
+        # # Case 3 -> shrink
+        # # slope_x_target = 0.5
+        # # slope_y_target = 0.5
 
+        # # Smoothing factor for gradual change
+        # smoothing_factor = 0.01
+
+        # # Gradually adjust the slope towards the target
+        # slope_x += (slope_x_target - slope_x) * smoothing_factor
+        # slope_y += (slope_y_target - slope_y) * smoothing_factor
+
+        # # Calculate displacement fields for x and y independently
+        # x_displacement = ((x - width / 2) / slope_x) - (x - width / 2)
+        # y_displacement = ((y - height / 2) / slope_y) - (y - height / 2)
+
+
+        '''
+        Polynomial Function
+        '''
+        
+        # Polynomial coefficients for x and y displacements
+        ax, bx, cx = 0.00015, 1.0, 0  # Coefficients for x direction
+        ay, by, cy = 0.00015, 1.0, 0  # Coefficients for y direction
+        # Target coefficients for gradual polynomial change
+        bx_target = 2.0
+        by_target = 2.0
         # Smoothing factor for gradual change
         smoothing_factor = 0.01
-
-        # Gradually adjust the slope towards the target
-        slope_x += (slope_x_target - slope_x) * smoothing_factor
-        slope_y += (slope_y_target - slope_y) * smoothing_factor
-
-        # Calculate displacement fields for x and y independently
-        x_displacement = ((x - width / 2) / slope_x) - (x - width / 2)
-        y_displacement = ((y - height / 2) / slope_y) - (y - height / 2)
-        # Plot displacement for the middle row and middle column
+        # Gradually adjust bx and by towards their target values
+        bx += (bx_target - bx) * smoothing_factor
+        by += (by_target - by) * smoothing_factor
+        x_displacement = ax * ((x - width / 2) ** 2) + bx * (x - width / 2) + cx - (x - width / 2)
+        y_displacement = ay * ((y - height / 2) ** 2) + by * (y - height / 2) + cy - (y - height / 2)
+        
+        
+        # # Plot displacement for the middle row and middle column
         row_idx = height // 2  # Middle row for X displacement
         col_idx = width // 2  
         zx_img = ax_zx.plot(-x_displacement[row_idx, :])
