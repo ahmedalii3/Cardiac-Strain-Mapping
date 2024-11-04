@@ -51,3 +51,83 @@ middle_slice = img[img.shape[0] // 2, :, :]  # Choose the middle slice
 plt.imshow(middle_slice, cmap='gray')
 plt.colorbar()
 plt.show()
+
+
+def convert_any_neg_to_zero(output_path):
+    """
+    Convert any negative pixel values to zero in the images in the output directory.
+    """
+    for root, dirs, files in os.walk(output_path):
+        for file in files:
+            if file.endswith(".nii"):  # Check for NIfTI files
+                nifti_file_path = os.path.join(root, file)
+                try:
+                    image = sitk.ReadImage(nifti_file_path)
+                    image_np = sitk.GetArrayFromImage(image)
+                    image_np[image_np < 0] = 0
+                    image = sitk.GetImageFromArray(image_np)
+                    sitk.WriteImage(image, nifti_file_path)
+                    print(f"Converted negative values to zero for: {nifti_file_path}")
+                except Exception as e:
+                    print(f"Failed to read {nifti_file_path}: {str(e)}")
+output_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_standardized"  # Path where standardized images are saved
+convert_any_neg_to_zero(output_path)
+
+def normalize_file_by_file(dicom_file, output_dir):
+    """
+    load and normalize single slice dicome file by z-score normalization
+    """
+    image = sitk.ReadImage(dicom_file)
+    image_np = sitk.GetArrayFromImage(image)
+    mean = image_np.mean()
+    std = image_np.std()
+    image_np = (image_np - mean) / std
+    image = sitk.GetImageFromArray(image_np)
+    output_file = os.path.join(output_dir, os.path.basename(dicom_file))
+    sitk.WriteImage(image, output_file)
+    print(f"Saved: {output_dir}")
+    print(f"Mean: {mean}, Std: {std}")
+    
+
+def loop_and_normalize(dataset_path, output_path, search_term="4d"):
+    """
+    Loop over the dataset, clone the folder structure, and standardize the resolution of single-slice data.
+    """
+    # Clone the directory structure
+    # clone_directory_structure(dataset_path, output_path)
+
+    for root, dirs, files in os.walk(dataset_path):
+        # Ignore directories with '4d' in their name
+        if search_term not in os.path.basename(root):
+            for file in files:
+                if search_term not in file:
+                    if file.endswith(".nii"):  # Assuming DICOM files are used
+                        dicom_file_path = os.path.join(root, file)
+                        print(f"Processing: {dicom_file_path}")
+                        
+                        # Process and save in the corresponding output directory
+                        output_dir = root.replace(dataset_path, output_path, 1)
+                        normalize_file_by_file(dicom_file_path, output_dir)
+
+# Example usage:
+dataset_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_standardized"  # Original dataset path
+output_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_standardized"  # New path for standardized data
+loop_and_normalize(dataset_path, output_path)
+# check for the min and max value of the image
+def check_image_values(output_path):
+    """
+    Check the minimum and maximum pixel values of the images in the output directory.
+    """
+    for root, dirs, files in os.walk(output_path):
+        for file in files:
+            if file.endswith(".nii"):  # Check for NIfTI files
+                nifti_file_path = os.path.join(root, file)
+                try:
+                    image = sitk.ReadImage(nifti_file_path)
+                    image_np = sitk.GetArrayFromImage(image)
+                    print(f"Min: {image_np.min()}, Max: {image_np.max()} for: {nifti_file_path}")
+                except Exception as e:
+                    print(f"Failed to read {nifti_file_path}: {str(e)}")
+
+output_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_standardized"  # Path where standardized images are saved
+check_image_values(output_path)
