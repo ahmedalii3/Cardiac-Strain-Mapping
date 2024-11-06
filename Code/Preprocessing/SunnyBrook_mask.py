@@ -39,15 +39,31 @@ def display_mask(mask):
   plt.show()
 
 def overlay_mask_on_image(dicom_image, mask):
-  plt.imshow(dicom_image.pixel_array, cmap='gray')
-  plt.imshow(mask, cmap='jet', alpha=0.5)  # Overlay mask with transparency
-  plt.title('Mask Overlay on DICOM Image')
+  fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+  
+  # Display original DICOM image
+  axes[0].imshow(dicom_image.pixel_array, cmap='gray')
+  axes[0].set_title('Original DICOM Image')
+  
+  # Display DICOM image with mask overlay
+  axes[1].imshow(dicom_image.pixel_array, cmap='gray')
+  axes[1].imshow(mask, cmap='jet', alpha=0.5)  # Overlay mask with transparency
+  axes[1].set_title('Mask Overlay on DICOM Image')
+  
   plt.show()
 
 def save_mask_as_numpy(mask_data, patient_id, frame_number, output_dir):
-  folder_name = f"patient{patient_id:04d}_frame{frame_number:03d}_gt"
-  output_path = os.path.join(output_dir, folder_name)
+  patient_folder_name = f"patient{patient_id:04d}"
+  patient_output_path = os.path.join(output_dir, patient_folder_name)
+  os.makedirs(patient_output_path, exist_ok=True)
+  
+  folder_name = f"frame{frame_number:03d}_gt"
+  output_path = os.path.join(patient_output_path, folder_name)
   os.makedirs(output_path, exist_ok=True)
+  
+  file_name = f"{folder_name}.npy"
+  np.save(os.path.join(output_path, file_name), mask_data)
+  print(f"Saved mask numpy file to {os.path.join(output_path, file_name)}")
   
   file_name = f"{folder_name}.npy"
   np.save(os.path.join(output_path, file_name), mask_data)
