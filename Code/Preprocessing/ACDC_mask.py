@@ -30,6 +30,10 @@ for root, dirs, files in os.walk(base_dir):
                     # Replace intensity 1 (right ventricle) with 0
                     mask_data[mask_data == 1] = 0
                     print("    Replaced intensity 1 with 0.")
+
+                    # Replace intensity 3 (left atrium) with 1
+                    mask_data[mask_data == 3] = 1
+                    print("    Replaced intensity 3 with 1.")
                     
                     # Create a new NIfTI image with the modified data
                     new_mask_img = nib.Nifti1Image(mask_data, mask_img.affine, mask_img.header)
