@@ -60,7 +60,7 @@ class Prepocessing:
 
 # Test the class
 preprocessor = Prepocessing()
-folder_path = "../../Data/ACDC/training/patient001/"
+folder_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_standardized/patient001"
 patient = os.path.basename(folder_path[:-1])
 frame_gt_list = get_frame_gt_dict(folder_path)
 
