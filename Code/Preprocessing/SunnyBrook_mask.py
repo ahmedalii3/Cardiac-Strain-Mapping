@@ -31,24 +31,29 @@ def create_mask(dicom_image, inner_contour, outer_contour):
   
   return mask
 
-def display_mask(mask):
-  plt.imshow(mask, cmap='gray')
-  plt.title('Generated Mask')
-  plt.show()
-
-def overlay_mask_on_image(dicom_image, mask):
-  fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+def save_and_display_masks(patient_id, images_and_masks, output_dir):
+  masks_images_dir = os.path.join(output_dir, "Masks_Images")
+  os.makedirs(masks_images_dir, exist_ok=True)
   
-  _, axes = plt.subplots(1, 2, figsize=(12, 6))
-  axes[0].imshow(dicom_image.pixel_array, cmap='gray')
-  axes[0].set_title('Original DICOM Image')
+  patient_folder_name = f"patient{patient_id:04d}"
+  patient_output_dir = os.path.join(masks_images_dir, patient_folder_name)
+  os.makedirs(patient_output_dir, exist_ok=True)
   
-  # Display DICOM image with mask overlay
-  axes[1].imshow(dicom_image.pixel_array, cmap='gray')
-  axes[1].imshow(mask, cmap='jet', alpha=0.5)  # Overlay mask with transparency
-  axes[1].set_title('Mask Overlay on DICOM Image')
-  
-  plt.show()
+  for dicom_image, mask, slice_id in images_and_masks:
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    
+    axes[0].imshow(dicom_image.pixel_array, cmap='gray')
+    axes[0].set_title(f'Original DICOM Image\nPatient: {patient_id}, Slice: {slice_id}')
+    
+    # Display DICOM image with mask overlay
+    axes[1].imshow(dicom_image.pixel_array, cmap='gray')
+    axes[1].imshow(mask, cmap='jet', alpha=0.5)  # Overlay mask with transparency
+    axes[1].set_title(f'Mask Overlay on DICOM Image\nPatient: {patient_id}, Slice: {slice_id}')
+    
+    # Save the figure
+    fig_path = os.path.join(patient_output_dir, f"mask_overlay_slice_{slice_id}.png")
+    plt.savefig(fig_path)
+    plt.close(fig)
 
 def save_mask_as_numpy(mask_data, patient_id, frame_number, output_dir):
   patient_folder_name = f"patient{patient_id:04d}"
@@ -73,6 +78,7 @@ def process_patient_contours(image_dir, contour_dir, output_dir, csv_path, max_p
   patient_mapping = dict(zip(patient_data['PatientID'], patient_data['OriginalID']))
   
   patient_count = 0
+  all_images_and_masks = []
 
   # Check if the directory exists
   if not os.path.exists(image_dir):
@@ -106,6 +112,8 @@ def process_patient_contours(image_dir, contour_dir, output_dir, csv_path, max_p
           if not dicom_files:
               print(f"No DICOM files found in: {patient_path}")
               continue
+          
+          images_and_masks = []
 
           for dicom_file in dicom_files:
               dicom_id = dicom_file.split('-')[-1].split('.')[0]
@@ -114,7 +122,7 @@ def process_patient_contours(image_dir, contour_dir, output_dir, csv_path, max_p
               
               contours = {'inner': None, 'outer': None}
               for contour_file in os.listdir(contour_patient_folder):
-                  if dicom_id in contour_file:
+                    if dicom_id in contour_file.split('-')[2]:
                       contour_path = os.path.join(contour_patient_folder, contour_file)
                       if 'icontour' in contour_file:
                           contours['inner'] = load_contour(contour_path)
@@ -131,10 +139,15 @@ def process_patient_contours(image_dir, contour_dir, output_dir, csv_path, max_p
               if contours['inner'] is not None and contours['outer'] is not None:
                   mask_data = create_mask(dicom_image, contours['inner'], contours['outer'])
                   save_mask_as_numpy(mask_data, int(patient_folder[-4:]), int(dicom_id), output_dir)
-                  overlay_mask_on_image(dicom_image, mask_data)
+                  images_and_masks.append((dicom_image, mask_data, dicom_id))
+
+          if images_and_masks:
+              all_images_and_masks.append((patient_folder, images_and_masks))
 
           patient_count += 1
 
+  for patient_folder, images_and_masks in all_images_and_masks:
+        save_and_display_masks(int(patient_folder[-4:]), images_and_masks, output_dir)
 
 # Set the current working directory to the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
