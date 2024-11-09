@@ -58,7 +58,7 @@ class Apply_Displacement:
 
         # Plot the initial data
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
-        Z = gaussian_filter1d(Z, sigma=10, axis=0)
+        Z = gaussian_filter1d(Z, sigma=50, axis=0)
         Zx, Zy = np.gradient(Z)
 
         x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)  # Scale by 50 for more visible effect
@@ -89,10 +89,10 @@ class Apply_Displacement:
         # Function to update the plots
         def update(frame):
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
-            Z = gaussian_filter1d(Z, sigma=10, axis=0)
+            Z = gaussian_filter1d(Z, sigma=50, axis=0)
             Zx, Zy = np.gradient(Z)
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *10000
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *10000
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *4750000
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *4750000
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             nonlocal displaced_image, x_displaced_image, y_displaced_image  # To ensure displaced_image is updated across frames
@@ -122,7 +122,7 @@ class Apply_Displacement:
 
 
         # Animate the wave and displacements
-        ani = FuncAnimation(fig, update, frames=np.linspace(0, 100, 400), blit=False, repeat=False)
+        ani = FuncAnimation(fig, update, frames=np.linspace(0, 100, 150), blit=False, repeat=False)
         plt.tight_layout()
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)

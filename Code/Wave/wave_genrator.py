@@ -10,15 +10,15 @@ class Wave_Generator():
         # Default self.parameters
         self.param = {
             'meshsize': 220,
-            'patchsize': 200,
-            'windSpeed': 100,
+            'patchsize': 50,
+            'windSpeed': 50,
             'winddir': 90,
             'rng': 13,
             'A': 1e-7,
             'g': 9.81,
             'xLim': [-10, 10],
             'yLim': [-10, 10],
-            'zLim': [-1e-5 * 2, 1e-5 * 2]
+            'zLim': [-1e-5, 1e-5]
         }
 
         self.presetModes = {
