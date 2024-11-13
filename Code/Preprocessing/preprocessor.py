@@ -86,9 +86,21 @@ class Preprocessor:
         logging.info(f"Original shape: {image_np.shape}, Resampled shape: {image_resampled_np.shape}")
         logging.info(f"Original spacing: {current_spacing}, New spacing: {image_resampled.GetSpacing()}")
 
+    def change_mask_values(self, mask_nefti_path):
+        """
+        Change the values of the mask to 0 and 1 to remove the Right Ventricle.
+        """
+        mask = sitk.ReadImage(mask_nefti_path)
+        mask_np = sitk.GetArrayFromImage(mask)
+        mask_np[mask_np == 1] = 0
+        mask_np[mask_np == 3] = 1
+        mask = sitk.GetImageFromArray(mask_np)
+        return mask
+
     def process_mask_dicom(self, dicom_file, target_resolution, output_dir):
-        # Load the DICOM file
-        image = sitk.ReadImage(dicom_file)
+        # Load the DICOM file and change the values of the mask
+        image = self.change_mask_values(dicom_file)
+
         current_spacing = np.array(image.GetSpacing())
 
         resize_factor = np.array([current_spacing[0] / target_resolution[0], 
