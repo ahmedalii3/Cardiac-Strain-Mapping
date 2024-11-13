@@ -32,6 +32,16 @@ class Preprocessor:
             os.makedirs(dst_dir, exist_ok=True)  # Create the directory if it doesn't exist
 
         
+    def change_mask(self,mask_path):
+        mask = sitk.ReadImage(mask_path)
+        mask_np = sitk.GetArrayFromImage(mask)
+        mask_np[mask_np == 1] = 0
+        mask_np[mask_np == 3] = 1
+        modified_mask = sitk.GetImageFromArray(mask_np)  
+        modified_mask.CopyInformation(mask)
+        # Overwrite the original mask file with the modified mask
+        sitk.WriteImage(modified_mask, mask_path)
+
 
     def monotonic_zoom_interpolate(self, img: np.ndarray, zoom_factor: float) -> np.ndarray:
         """
@@ -245,6 +255,7 @@ class Preprocessor:
             if file.endswith(".nii.gz"):
                 
                 if "gt" in file:
+                    self.change_mask(os.path.join(patient_root,file))
                     name_of_frame = file.split("_")[1]
                     frames_list.append(name_of_frame)
                     # print("proccesing file: ", file)    
