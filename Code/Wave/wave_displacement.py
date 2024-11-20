@@ -6,6 +6,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cm
 from scipy.ndimage import gaussian_filter1d
 import cv2
+from PIL import Image as im 
 
 from wave_genrator import Wave_Generator
 
@@ -16,7 +17,9 @@ os.chdir(os.path.dirname(__file__)) #change working directory to current directo
 
 class Apply_Displacement:
     def __init__(self):
-        self.image_path = "SheppLogan_Phantom.svg.png"
+
+        # self.image_path = "SheppLogan_Phantom.svg.png"
+        self.image_path = '/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_3_ACDC.npy'
         self.image = None
         self.wave = Wave_Generator()
         self.param = self.wave.param
@@ -122,7 +125,7 @@ class Apply_Displacement:
 
 
         # Animate the wave and displacements
-        ani = FuncAnimation(fig, update, frames=np.linspace(0, 100, 150), blit=False, repeat=False)
+        ani = FuncAnimation(fig, update, frames=np.linspace(0, 30, 50), blit=False, repeat=False)
         plt.tight_layout()
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)
@@ -130,8 +133,28 @@ class Apply_Displacement:
         plt.show()
 
     def load_image(self):
-        self.image = cv2.imread(self.image_path)
-        self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+        # Load the image array from the .npy file
+        array = np.load(self.image_path)
+        array = array[0]
+        
+        # Extract the first image if the array has extra dimensions
+        if len(array.shape) > 3 or (len(array.shape) == 3 and array.shape[0] not in [1, 3]):
+            image_array = array[0]  # Adjust indexing as needed for your specific data
+        else:
+            image_array = array
+
+        # Ensure the array is in uint8 format (0-255 range) for proper visualization
+        if image_array.dtype != np.uint8:
+            image_array = cv2.normalize(image_array, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+        # Handle grayscale or RGB format
+        if len(image_array.shape) == 2:  # Grayscale
+            self.image = cv2.cvtColor(image_array, cv2.COLOR_GRAY2RGB)  # Convert to RGB for consistency
+        elif len(image_array.shape) == 3 and image_array.shape[2] in [3, 4]:  # RGB or RGBA
+            self.image = image_array[:, :, :3]  # Discard alpha if present
+        else:
+            raise ValueError("Unexpected image shape, unable to load the image properly.")
+
         return self.image
 
 # Initialize and run the plot with wave displacements

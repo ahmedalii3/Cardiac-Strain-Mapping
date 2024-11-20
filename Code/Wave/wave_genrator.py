@@ -9,7 +9,7 @@ class Wave_Generator():
         
         # Default self.parameters
         self.param = {
-            'meshsize': 220,
+            'meshsize': 512,
             'patchsize': 50,
             'windSpeed': 50,
             'winddir': 90,
