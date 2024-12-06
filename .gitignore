@@ -8,3 +8,9 @@ Code/Segmentation/cine_Segmenation/Datasets
 Code/Segmentation/cardiac_cine_mri_segmentation
 Code/Segmentation/ACDC
 /Data
+/Code/ventricular_short_axis_3label/configs
+/Code/ventricular_short_axis_3label/models
+/Code/ventricular_short_axis_3label/tensorflow_env
+! Code/ventricular_short_axis_3label/docs
+
+ 
