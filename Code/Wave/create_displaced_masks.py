@@ -40,6 +40,17 @@ class Apply_Displacement:
         # Warp the image using remap for both x and y displacements
         displaced_image = cv2.remap(image, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
         return displaced_image
+    
+    def save_stack(self):
+        import os
+        from PIL import Image
+
+        output_dir = "displaced_images_test"
+        os.makedirs(output_dir, exist_ok=True)
+
+        np.savez_compressed("displaced_images/displaced_images.npz", *self.displaced_image_stack)
+
+        print(f"Displaced images saved to {output_dir}")
 
     def plot(self):
         fig = plt.figure(figsize=(20, 10))
@@ -66,14 +77,7 @@ class Apply_Displacement:
         # Plot the initial data
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
         Z = gaussian_filter1d(Z, sigma=50, axis=0)
-
-        self.masks = np.load('displaced_images/displaced_images.npz')
-        displaced_mask = self.masks['arr_0']
-        displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
-        Zx, Zy = np.gradient(Z) * displaced_mask
-
-        # Zx, Zy = np.gradient(Z)
+        Zx, Zy = np.gradient(Z)
 
         binarized_image = np.where(image > 128, 1, 0)
         self.displaced_image_stack.append(binarized_image)
@@ -112,14 +116,7 @@ class Apply_Displacement:
 
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=50, axis=0)
-
-            #get the frame in dispalce_images            
-            displaced_mask = self.masks[f'arr_{int(frame+2)}']
-            displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-            displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
-            Zx, Zy = np.gradient(Z) * displaced_mask
-
-            # Zx, Zy = np.gradient(Z)
+            Zx, Zy = np.gradient(Z)
 
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *47500000
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *47500000
@@ -144,13 +141,12 @@ class Apply_Displacement:
             zx_img.set_data(Zx)
             zy_img.set_data(Zy)
 
-            # Update the displaced image plot            
+            # Update the displaced image plot
             displaced_image_plot.set_data(displaced_image)
-            
-            
             x_displaced_image_plot.set_data(x_displaced_image)
             y_displaced_image_plot.set_data(y_displaced_image)
-            
+
+            self.save_stack()
 
             return wave_surf, zx_img, zy_img, displaced_image_plot
 
@@ -168,7 +164,8 @@ class Apply_Displacement:
     def load_image(self):
         # Load the image array from the .npy file
         array = np.load(self.image_path)
-        array = array[0]
+        array = array[1]
+        array = np.where(array > 1, 1, 0)
         
         # Extract the first image if the array has extra dimensions
         if len(array.shape) > 3 or (len(array.shape) == 3 and array.shape[0] not in [1, 3]):
