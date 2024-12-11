@@ -1,9 +1,11 @@
 import nibabel as nib
 import numpy as np
 import os
-
+import sys
 # Base directory of your dataset
-base_dir = r'D:\study\graduation project\GP-2025-Strain\Data\ACDC\database\training'
+base_path = os.getcwd()
+# print(base_path)
+base_dir = os.path.abspath(os.path.join(base_path, "../../../Data/ACDC/database/training"))
 
 print("Starting processing of ground truth files...\n")
 
@@ -15,6 +17,7 @@ for root, dirs, files in os.walk(base_dir):
         # Find the .nii file inside this folder
         found_file = False
         for file in os.listdir(gt_folder_path):
+            # print(f"  Checking file: {file} in {gt_folder_path}")
             if (file.endswith('.nii') or file.endswith('.nii.gz')) and '_gt' in file:
                 found_file = True
                 file_path = os.path.join(gt_folder_path, file)
@@ -35,11 +38,10 @@ for root, dirs, files in os.walk(base_dir):
                 # Create a new NIfTI image with the modified data
                 new_mask_img = nib.Nifti1Image(mask_data, mask_img.affine, mask_img.header)
                 
-                # Save the modified mask to a new file
-                new_file_path = os.path.join(gt_folder_path, file.replace('.nii.gz', '_modified.nii.gz'))
-                nib.save(new_mask_img, new_file_path)
+                # Save the modified mask to the same file
+                nib.save(new_mask_img, file_path)
                 
-                print(f"    Saved modified file: {new_file_path}\n")
+                print(f"    Saved modified file: {file_path}\n")
 
         if not found_file:
             print(f"  No .nii file found in {gt_folder_path}\n")
