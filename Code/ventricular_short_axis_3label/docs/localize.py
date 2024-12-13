@@ -5,6 +5,7 @@ import numpy as np
 import SimpleITK as sitk
 import scipy.interpolate as spi
 from scipy.ndimage import zoom
+import sys
 import os
 from scipy.ndimage import center_of_mass
 
@@ -194,25 +195,27 @@ class Localize:
     
 
 # sample usage
+base_path = os.getcwd()
 
 # im = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy/patient085/patient085_frame01_slice_10_ACDC.npy")
 # mask = im[1,:,:]
 # im = im[0,:,:]
 # loop over all patients
-directory = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy"
-for root, dirs, files in os.walk(directory):
-    list_of_directories = dirs
-    break
-for patient in list_of_directories:
-    print(patient)
-    Localizer = Localize(os.path.join(directory, patient))
-    Localizer.compare_masks_with_cropped_masks()
+# directory = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy"
+# for root, dirs, files in os.walk(directory):
+#     list_of_directories = dirs
+#     break
+# for patient in list_of_directories:
+#     print(patient)
+#     Localizer = Localize(os.path.join(directory, patient))
+#     Localizer.compare_masks_with_cropped_masks()
 
-# Localizer = Localize("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy/patient089")  # path to the time series folder
-# image = Localizer.get_cropped_image(4)
-# # Localizer.compare_masks_with_cropped_masks()
-# Localizer.plot_image(image)
-# Localizer.view_center_of_mass(2)
+file_to_localize = os.path.join(base_path, "../../../Data/ACDC/database/train_numpy/patient089")
+Localizer = Localize(file_to_localize)  # path to the time series folder
+image = Localizer.get_cropped_image(4)
+# Localizer.compare_masks_with_cropped_masks()
+Localizer.plot_image(image)
+Localizer.view_center_of_mass(2)
 
 
         
