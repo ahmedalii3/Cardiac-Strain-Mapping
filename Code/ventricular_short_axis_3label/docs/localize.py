@@ -15,6 +15,9 @@ class Localize:
         self.center_mass = None
         self.median = None  
         self.array_of_cropped_images = []
+        self.array_of_cropped_masks = []
+        self.array_of_segmenations = []
+        self.array_of_masks = []
         self.array_of_images_in_time_series = {}
         self.time_series = time_series
         self.images_with_center_mass = []
@@ -40,18 +43,39 @@ class Localize:
 
     def localize_image(self):
         self.array_of_cropped_images = []
+        self.array_of_cropped_masks = []
+        self.array_of_masks = []
         for root, dirs, files in os.walk(self.time_series):
             for file in files:
                 if file.endswith(".npy"):
                     im = np.load(os.path.join(root, file))
+                    mask = im[1,:,:]
                     im = im[0,:,:]
                     self.array_of_images_in_time_series[file] = im
                     center = self.center_of_masses_dictionary[file]
-                    if np.linalg.norm(center - self.median) > 30:
+                    if np.linalg.norm(center - self.median) > 0:
                         center = self.median
                         self.center_of_masses_dictionary[file] = center
                     cropped_image = self.crop_image(im, center)
+                    cropped_mask = self.crop_mask(mask, center)
                     self.array_of_cropped_images.append(cropped_image)
+                    self.array_of_cropped_masks.append(cropped_mask)
+                    self.array_of_masks.append(mask)
+
+    def compare_masks_with_cropped_masks(self):
+        IoU_list = []
+        for i in range(len(self.array_of_masks)):
+            original_mask = self.array_of_masks[i]   
+            cropped_mask = self.array_of_cropped_masks[i]
+            number_of_pixels_equal_to_two_in_original_mask = np.sum(original_mask == 2)
+            number_of_pixels_equal_to_two_in_cropped_mask = np.sum(cropped_mask == 2)
+            if number_of_pixels_equal_to_two_in_original_mask != number_of_pixels_equal_to_two_in_cropped_mask:
+                print("Error in cropping the mask")
+                print("the difference between them is ", number_of_pixels_equal_to_two_in_original_mask - number_of_pixels_equal_to_two_in_cropped_mask)
+                self.plot_image(cropped_mask)
+            else:
+                print("The cropping is correct")
+        
 
     def calculate_median(self, time_series):
         center_mass = []
@@ -60,15 +84,27 @@ class Localize:
             for file in files:
                 if file.endswith(".npy"):
                     im = np.load(os.path.join(root, file))
+                    # print(im.shape)
                     mask = im[1,:,:]
                     im = im[0,:,:]
                     self.image = im
                     seg = self.predict_seg()
+                    
+                    # self.plot_image_seg(im, seg)
+                    self.array_of_segmenations.append(seg)  
                     center = self.calculate_center_of_mass(seg)
                     center_mass.append(center)
                     self.center_of_masses_dictionary[file] = center
+                    self.array_of_images_in_time_series[file] = im
+
+                    # plt.imshow(self.array_of_images_in_time_series[file], cmap='gray')
+                    # plt.scatter(center[1], center[0], c='red')
+            # plt.scatter(self.median[0], self.median[1], c='blue')
+                    # plt.show()
+        
         
         self.median = np.median(center_mass, axis=0)
+      
         
                      
     def remove_outliers_zscore(self, mask, target_value, threshold = 0.5):
@@ -115,19 +151,38 @@ class Localize:
 
     def calculate_center_of_mass(self, seg):
         self.center_mass = center_of_mass(seg)
+        # # calculate center of mass
+        # y_indices, x_indices = np.where((seg == 2) | (seg == 1))
+        
+        # x_center = np.mean(x_indices)
+        # y_center = np.mean(y_indices)
+
+        # self.center_mass = [y_center, x_center]
+        # plt.imshow(seg, cmap='gray')
+        # plt.scatter(self.center_mass[0], self.center_mass[1], c='red')
+        # plt.show()
         return self.center_mass
+    
+    
     
     def crop_image(self, image, center_mass, size = 128):
         cropx, cropy = size, size   # size of the cropped image
-        x, y = center_mass
+        y, x = center_mass
         startx = int(x - cropx // 2)
         starty = int(y - cropy // 2)
         return image[starty:starty + cropy, startx:startx + cropx]
 
+    def crop_mask(self, mask, center_mass, size = 128):
+        cropx, cropy = size, size
+        y, x = center_mass
+        startx = int(x - cropx // 2)
+        starty = int(y - cropy // 2)
+        return mask[starty:starty + cropy, startx:startx + cropx]
+
     
-    def plot_image_seg(self):
-        plt.imshow(self.image, cmap='gray')
-        plt.imshow(self.seg, cmap='jet',alpha=0.5)
+    def plot_image_seg(self,image, seg = None):
+        plt.imshow(image, cmap='gray')
+        plt.imshow(seg, cmap='jet',alpha=0.5)
         plt.show()
 
     def plot_image(self , image):
@@ -143,11 +198,21 @@ class Localize:
 # im = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy/patient085/patient085_frame01_slice_10_ACDC.npy")
 # mask = im[1,:,:]
 # im = im[0,:,:]
+# loop over all patients
+directory = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy"
+for root, dirs, files in os.walk(directory):
+    list_of_directories = dirs
+    break
+for patient in list_of_directories:
+    print(patient)
+    Localizer = Localize(os.path.join(directory, patient))
+    Localizer.compare_masks_with_cropped_masks()
 
-Localizer = Localize("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy/patient085")  # path to the time series folder
-image = Localizer.get_cropped_image(5)
-Localizer.plot_image(image)
-Localizer.view_center_of_mass(5)
+# Localizer = Localize("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/ACDC/database/train_numpy/patient089")  # path to the time series folder
+# image = Localizer.get_cropped_image(4)
+# # Localizer.compare_masks_with_cropped_masks()
+# Localizer.plot_image(image)
+# Localizer.view_center_of_mass(2)
 
 
         
