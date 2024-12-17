@@ -67,7 +67,8 @@ class Apply_Displacement:
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
         Z = gaussian_filter1d(Z, sigma=50, axis=0)
 
-        self.masks = np.load('displaced_images/displaced_images.npz')
+        # self.masks = np.load('displaced_images/displaced_images.npz')
+        self.masks = np.load('dilated_masks/dilated_masks.npz')
         displaced_mask = self.masks['arr_0']
         displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
         displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
@@ -121,8 +122,8 @@ class Apply_Displacement:
 
             # Zx, Zy = np.gradient(Z)
 
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *47500000
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *47500000
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float64) *1e5
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float64) *1e5
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
