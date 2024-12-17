@@ -21,6 +21,7 @@ class Localize:
         self.array_of_masks = []
         self.array_of_images_in_time_series = {}
         self.time_series = time_series
+        # print("The time series is: ", time_series)
         self.images_with_center_mass = []
         self.center_of_masses_dictionary = {}
         self.calculate_median(self.time_series)
@@ -29,6 +30,9 @@ class Localize:
 
     def get_cropped_image(self, image_number):
         return self.array_of_cropped_images[image_number]
+    
+    def get_cropped_mask(self, image_number):
+        return self.array_of_cropped_masks[image_number]
     
     def view_center_of_mass(self, image_number):
 
@@ -103,6 +107,7 @@ class Localize:
             # plt.scatter(self.median[0], self.median[1], c='blue')
                     # plt.show()
         
+        # print("The center of mass of the images are: ", center_mass)
         
         self.median = np.median(center_mass, axis=0)
       
@@ -210,14 +215,20 @@ base_path = os.getcwd()
 #     Localizer = Localize(os.path.join(directory, patient))
 #     Localizer.compare_masks_with_cropped_masks()
 
-file_to_localize = os.path.join(base_path, "../../../Data/ACDC/database/train_numpy/patient089")
-Localizer = Localize(file_to_localize)  # path to the time series folder
-image = Localizer.get_cropped_image(4)
+# file_to_localize = os.path.join(base_path, "../../Data/ACDC/database/train_numpy/patient055")
+# Localizer = Localize(file_to_localize)  # path to the time series folder
+# image = Localizer.get_cropped_image(4)
 # Localizer.compare_masks_with_cropped_masks()
-Localizer.plot_image(image)
-Localizer.view_center_of_mass(2)
+# Localizer.plot_image(image)
+# Localizer.view_center_of_mass(2)
 
-
+# file_to_localize = os.path.join(base_path, "../../Data/ACDC/database/train_numpy/patient055")
+# Localizer = Localize(file_to_localize)  # path to the time series folder
+# image = Localizer.get_cropped_image(4)
+# mask = Localizer.get_cropped_mask(4)
+# Localizer.plot_image(image)
+# Localizer.plot_image_seg(image, mask)
+# Localizer.view_center_of_mass(2)
         
     
 
