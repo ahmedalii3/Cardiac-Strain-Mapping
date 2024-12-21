@@ -44,17 +44,37 @@ class Apply_Displacement:
         return displaced_image
 
     def plot(self):
-        fig = plt.figure(figsize=(20, 10))
+        fig = plt.figure(figsize=(20, 30))  # Adjust the figure size to accommodate the larger grid
         self.displaced_image_stack = []
 
-        # Setup subplots
-        ax_wave = fig.add_subplot(2, 5, 4, projection='3d')  # 3D wave plot
-        ax_zx = fig.add_subplot(2, 5, 2)
-        ax_zy = fig.add_subplot(2, 5, 3)
-        ax_image = fig.add_subplot(1, 5, 1)
-        ax_displaced = fig.add_subplot(1, 5, 4)
-        ax_x_displacement = fig.add_subplot(1, 5, 2)
-        ax_y_displacement = fig.add_subplot(1, 5, 3)
+        # Setup subplots in a 6x4 grid
+        ax_image = fig.add_subplot(6, 4, 1)            # Row 1, Col 1
+        ax_displaced = fig.add_subplot(6, 4, 2)        # Row 1, Col 2
+        ax_x_displacement = fig.add_subplot(6, 4, 3)   # Row 1, Col 3
+        ax_y_displacement = fig.add_subplot(6, 4, 4)   # Row 1, Col 4
+
+        ax_wave = fig.add_subplot(6, 4, 5, projection='3d')  # 3D wave plot (Row 2, Col 1)
+        ax_zx = fig.add_subplot(6, 4, 6)              # Row 2, Col 2
+        ax_zy = fig.add_subplot(6, 4, 7)              # Row 2, Col 3
+
+        # Add other plots to fill the grid
+        ax_extra1 = fig.add_subplot(6, 4, 8)          # Row 2, Col 4
+        ax_extra2 = fig.add_subplot(6, 4, 9)          # Row 3, Col 1
+        ax_extra3 = fig.add_subplot(6, 4, 10)         # Row 3, Col 2
+        ax_extra4 = fig.add_subplot(6, 4, 11)         # Row 3, Col 3
+        ax_extra5 = fig.add_subplot(6, 4, 12)         # Row 3, Col 4
+        ax_extra6 = fig.add_subplot(6, 4, 13)         # Row 4, Col 1
+        ax_extra7 = fig.add_subplot(6, 4, 14)         # Row 4, Col 2
+        ax_extra8 = fig.add_subplot(6, 4, 15)         # Row 4, Col 3
+        ax_extra9 = fig.add_subplot(6, 4, 16)         # Row 4, Col 4
+        ax_extra10 = fig.add_subplot(6, 4, 17)        # Row 5, Col 1
+        ax_extra11 = fig.add_subplot(6, 4, 18)        # Row 5, Col 2
+        ax_extra12 = fig.add_subplot(6, 4, 19)        # Row 5, Col 3
+        ax_extra13 = fig.add_subplot(6, 4, 20)        # Row 5, Col 4
+        ax_extra14 = fig.add_subplot(6, 4, 21)        # Row 6, Col 1
+        ax_extra15 = fig.add_subplot(6, 4, 22)        # Row 6, Col 2
+        ax_extra16 = fig.add_subplot(6, 4, 23)        # Row 6, Col 3
+        ax_extra17 = fig.add_subplot(6, 4, 24)        # Row 6, Col 4
 
 
         # Load the initial image
@@ -69,8 +89,7 @@ class Apply_Displacement:
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
         Z = gaussian_filter1d(Z, sigma=50, axis=0)
 
-        # self.masks = np.load('displaced_images/displaced_images.npz')
-        self.masks = np.load('dilated_masks/dilated_masks.npz')
+        self.masks = np.load('displaced_images/displaced_images.npz')
         displaced_mask = self.masks['arr_0']
         displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
         displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
@@ -126,8 +145,8 @@ class Apply_Displacement:
 
             # Zx, Zy = np.gradient(Z)
 
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *1e5
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *1e5
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *47500000
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *47500000
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
