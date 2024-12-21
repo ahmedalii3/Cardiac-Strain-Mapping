@@ -80,16 +80,17 @@ class Apply_Displacement:
         Zx, Zy = np.gradient(Z)
 
         binarized_image = np.where(image > 128, 1, 0)
-        self.displaced_image_stack.append(binarized_image)
+        # self.displaced_image_stack.append(binarized_image)
 
         x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)  # Scale by 50 for more visible effect
         y_displacement = np.clip(Zy * 50, -20, 20).astype(np.float32)
+        x_displacement = y_displaced_image = 0
         displaced_image = self.apply_displacement(image, x_displacement, y_displacement)
         x_displaced_image = self.apply_displacement(image, x_displacement, 0)
         y_displaced_image = self.apply_displacement(image, 0, y_displacement)
 
         binarized_image = np.where(displaced_image > 128, 1, 0)
-        self.displaced_image_stack.append(binarized_image)
+        # self.displaced_image_stack.append(binarized_image)
 
         # Initial plots
         wave_surf = ax_wave.plot_surface(X, Y, Z, cmap=cm.coolwarm)
@@ -113,7 +114,7 @@ class Apply_Displacement:
         # Function to update the plots
         def update(frame):
             nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
-
+            print(frame)
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=50, axis=0)
             Zx, Zy = np.gradient(Z)
@@ -127,7 +128,8 @@ class Apply_Displacement:
             y_displaced_image = self.apply_displacement(y_displaced_image, 0, Zy_dsip)
 
             binarized_image = np.where(displaced_image > 128, 1, 0)
-            self.displaced_image_stack.append(binarized_image)            
+            self.displaced_image_stack.append(binarized_image)
+            # print(len(self.displaced_image_stack))         
 
             # Update the 3D wave plot
             ax_wave.cla()  # Remove previous surface to avoid plotting over it

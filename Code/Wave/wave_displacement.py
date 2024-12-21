@@ -28,6 +28,8 @@ class Apply_Displacement:
         self.iterator = 0
         self.mask = None
 
+        self.frame_count = 0
+
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
         height, width, _ = image.shape
@@ -80,6 +82,7 @@ class Apply_Displacement:
 
         x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)  # Scale by 50 for more visible effect
         y_displacement = np.clip(Zy * 50, -20, 20).astype(np.float32)
+        x_displacement = y_displacement = 0
         displaced_image = self.apply_displacement(image, x_displacement, y_displacement)
         x_displaced_image = self.apply_displacement(image, x_displacement, 0)
         y_displaced_image = self.apply_displacement(image, 0, y_displacement)
@@ -109,12 +112,13 @@ class Apply_Displacement:
         # Function to update the plots
         def update(frame):
             nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
-
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=50, axis=0)
 
             #get the frame in dispalce_images            
-            displaced_mask = self.masks[f'arr_{int(frame+2)}']
+            displaced_mask = self.masks[f'arr_{self.frame_count}']
+            self.frame_count += 1
+            # print(f"arr_{int(frame)}")
             displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
             displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
             Zx, Zy = np.gradient(Z) * displaced_mask
@@ -146,8 +150,6 @@ class Apply_Displacement:
 
             # Update the displaced image plot            
             displaced_image_plot.set_data(displaced_image)
-            
-            
             x_displaced_image_plot.set_data(x_displaced_image)
             y_displaced_image_plot.set_data(y_displaced_image)
             
