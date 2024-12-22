@@ -74,6 +74,8 @@ class Apply_Displacement:
         displaced_mask = self.masks['arr_0']
         displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
         displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
+        displaced_mask = displaced_mask.astype(np.float64)
+        displaced_mask = displaced_mask / 255
         Zx, Zy = np.gradient(Z) * displaced_mask
 
         # Zx, Zy = np.gradient(Z)
@@ -122,12 +124,13 @@ class Apply_Displacement:
             # print(f"arr_{int(frame)}")
             displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
             displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
+            displaced_mask = displaced_mask.astype(np.float64)
             Zx, Zy = np.gradient(Z) * displaced_mask
 
             # Zx, Zy = np.gradient(Z)
 
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *1e5
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *1e5
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *2e5
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *2e5
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
