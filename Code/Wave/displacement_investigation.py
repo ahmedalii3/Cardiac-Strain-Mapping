@@ -51,7 +51,7 @@ class Apply_Displacement:
         ax_wave = fig.add_subplot(2, 5, 4, projection='3d')  # 3D wave plot
         ax_zx = fig.add_subplot(2, 5, 2)
         ax_zy = fig.add_subplot(2, 5, 3)
-        ax_image = fig.add_subplot(1, 5, 1)
+        ax_image = fig.add_subplot(2, 5, 4)
         ax_displaced = fig.add_subplot(1, 5, 4)
         ax_x_displacement = fig.add_subplot(1, 5, 2)
         ax_y_displacement = fig.add_subplot(1, 5, 3)
@@ -79,7 +79,7 @@ class Apply_Displacement:
         # displaced_mask = displaced_mask / 255
         Zx, Zy = np.gradient(Z) * displaced_mask
 
-        # Zx, Zy = np.gradient(Z)
+        natural_Zx, natural_Zy = np.gradient(Z)
 
         binarized_image = np.where(image > 128, 1, 0)
         self.displaced_image_stack.append(binarized_image)
@@ -96,27 +96,31 @@ class Apply_Displacement:
 
         # Initial plots
         wave_surf = ax_wave.plot_surface(X, Y, Z, cmap=cm.coolwarm)
-        
-        zx_img = ax_zx.imshow(Zx, cmap='coolwarm')
-        zy_img = ax_zy.imshow(Zy, cmap='coolwarm')
-        image_plot = ax_image.imshow(image)
-        ax_x_displacement.imshow(image)
-        ax_y_displacement.imshow(image)
-        displaced_image_plot = ax_displaced.imshow(displaced_image,cmap='viridis')
-        x_displaced_image_plot = ax_x_displacement.imshow(x_displaced_image)
-        y_displaced_image_plot = ax_y_displacement.imshow(y_displaced_image)
 
-        ax_wave.set_title('3D Wave Surface')
-        ax_zx.set_title('X Displacement (Zx)')
-        ax_zy.set_title('Y Displacement (Zy)')
-        ax_image.set_title('Original Image')
-        ax_displaced.set_title('Displaced Image')
-        ax_x_displacement.set_title('X Displaced Image')
-        ax_y_displacement.set_title('Y Displaced Image')
+        Zx_max_abs_value = max(abs(Zx.min()), abs(Zx.max()))
+        
+        zx_img = ax_zx.imshow(natural_Zx, cmap='hsv', vmin=-Zx_max_abs_value, vmax=Zx_max_abs_value)
+        zy_img = ax_zy.imshow(Zx, cmap='hsv', vmin=-Zx_max_abs_value, vmax=Zx_max_abs_value)
+        image_plot = ax_image.imshow(natural_Zx - Zx, cmap='hsv', vmin=-Zx_max_abs_value, vmax=Zx_max_abs_value)
+        
+        Zy_max_abs_value = max(abs(Zy.min()), abs(Zy.max()))
+        x_displaced_image_plot = ax_x_displacement.imshow(natural_Zy, cmap='hsv', vmin=-Zy_max_abs_value, vmax=Zy_max_abs_value)
+        y_displaced_image_plot = ax_y_displacement.imshow(Zy, cmap='hsv', vmin=-Zy_max_abs_value, vmax=Zy_max_abs_value)
+        displaced_image_plot = ax_displaced.imshow(natural_Zy - Zy,cmap='hsv', vmin=-Zy_max_abs_value, vmax=Zy_max_abs_value)
+
+        # ax_wave.set_title('3D Wave Surface')
+        ax_zx.set_title('Wave Displacement (Zx)')
+        ax_zy.set_title('Dilated Zx Displacement')
+        ax_image.set_title('Wave Zx - Dilated Zx')
+        ax_displaced.set_title('Wave Zy - Dilated Zy')
+        ax_x_displacement.set_title('Wave Displacement (Zy)')
+        ax_y_displacement.set_title('dilated Zy Displacement')
+
+        ax_wave.set_visible(False)
 
         # Function to update the plots
         def update(frame):
-            nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
+            nonlocal displaced_image, x_displaced_image, y_displaced_image, image_plot # To ensure displaced_image is updated across frames
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=50, axis=0)
 
@@ -130,10 +134,10 @@ class Apply_Displacement:
             displaced_mask = displaced_mask.astype(np.float64)
             Zx, Zy = np.gradient(Z) * displaced_mask
 
-            # Zx, Zy = np.gradient(Z)
+            natural_Zx, natural_Zy = np.gradient(Z)
 
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *5e7
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *5e7
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *4e7
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *4e7
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
@@ -151,14 +155,17 @@ class Apply_Displacement:
             ax_wave.set_ylim(self.param['yLim'])
             ax_wave.set_zlim(self.param['zLim'])
 
+            ax_wave.set_visible(False)
+
             # Update the x and y displacement images
-            zx_img.set_data(Zx)
-            zy_img.set_data(Zy)
+            zx_img.set_data(natural_Zx)
+            zy_img.set_data(Zx)
+            image_plot.set_data(natural_Zx - Zx)
 
             # Update the displaced image plot            
-            displaced_image_plot.set_data(displaced_image)
-            x_displaced_image_plot.set_data(x_displaced_image)
-            y_displaced_image_plot.set_data(y_displaced_image)
+            displaced_image_plot.set_data(natural_Zy - Zy)
+            x_displaced_image_plot.set_data(natural_Zy)
+            y_displaced_image_plot.set_data(Zy)
             
 
             return wave_surf, zx_img, zy_img, displaced_image_plot

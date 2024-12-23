@@ -95,8 +95,9 @@ class Apply_Displacement:
 
         self.masks = np.load('dilated_masks/dilated_masks.npz')
         displaced_mask = self.masks['arr_0']
-        displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
+        # displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        # displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
+        displaced_mask = displaced_mask[:,:,0]
         Zx, Zy = np.gradient(Z) * displaced_mask
 
         natural_Zx, natural_Zy = np.gradient(Z)
@@ -202,8 +203,9 @@ class Apply_Displacement:
             displaced_mask = self.masks[f'arr_{self.frame_count}']
             self.frame_count += 1
             # print(f"arr_{int(frame)}")
-            displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-            displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
+            # displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+            # displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
+            displaced_mask = displaced_mask[:,:,0]
             Zx, Zy = np.gradient(Z) * displaced_mask
 
             natural_Zx, natural_Zy = np.gradient(Z)
