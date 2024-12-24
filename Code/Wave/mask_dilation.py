@@ -9,6 +9,7 @@ class Mask_Dilation:
         self.mask = None
         self.all_masks = None
         self.dilated_masks = None
+        self.finished = False
 
 
     def import_masks(self, path):
@@ -19,7 +20,7 @@ class Mask_Dilation:
         self.all_masks = {key: self.all_masks[key].astype(np.float64) for key in self.all_masks.keys()}
         
         # Print the keys
-        print(self.all_masks.keys())
+        # print(self.all_masks.keys())
 
     def dilate_mask(self, mask):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
@@ -50,12 +51,16 @@ class Mask_Dilation:
 
         np.savez_compressed("dilated_masks/dilated_masks.npz", **self.dilated_masks)
         print(f"Dilated masks saved to {output_dir}")
+        self.finished = True
+
+    def check_status(self):
+        return self.finished
 
 
-mask_dilation = Mask_Dilation()
-mask_dilation.import_masks('displaced_images/displaced_images.npz')
-mask_dilation.create_dilated_masks()
-mask_dilation.save_dilated_masks()
+# mask_dilation = Mask_Dilation()
+# mask_dilation.import_masks('displaced_images/displaced_images.npz')
+# mask_dilation.create_dilated_masks()
+# mask_dilation.save_dilated_masks()
         
 
         

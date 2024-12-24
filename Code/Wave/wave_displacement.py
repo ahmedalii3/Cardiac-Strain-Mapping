@@ -7,6 +7,8 @@ import matplotlib.cm as cm
 from scipy.ndimage import gaussian_filter1d
 import cv2
 from PIL import Image as im 
+import time
+np.random.seed(int(time.time()))  # Dynamically set seed based on current time
 
 from wave_genrator import Wave_Generator
 
@@ -16,10 +18,11 @@ os.chdir(os.path.dirname(__file__)) #change working directory to current directo
 
 
 class Apply_Displacement:
-    def __init__(self):
+    def __init__(self, path, save_mode=False):
 
         # self.image_path = "SheppLogan_Phantom.svg.png"
-        self.image_path = '/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_3_ACDC.npy'
+        # self.image_path = '/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_3_ACDC.npy'
+        self.image_path = path
         self.image = None
         self.wave = Wave_Generator()
         self.param = self.wave.param
@@ -27,8 +30,15 @@ class Apply_Displacement:
         self.displaced_image_stack = []
         self.iterator = 0
         self.mask = None
+        
+        self.save_mode = save_mode
+        self.frame_1 = None
+        self.frame_2 = None
+        self.displacement_x = None
+        self.displacement_y = None
 
         self.frame_count = 0
+        self.finished = False
 
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
@@ -123,6 +133,9 @@ class Apply_Displacement:
             #get the frame in dispalce_images            
             displaced_mask = self.masks[f'arr_{self.frame_count}']
             self.frame_count += 1
+            if self.frame_count > 30:
+                self.finished = True
+            
             # print(f"arr_{int(frame)}")
             # displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
             # displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
@@ -136,9 +149,15 @@ class Apply_Displacement:
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *5e7
 
             # Apply the displacements to the previously displaced image (cumulative effect)
+            self.frame_1 = displaced_image
+            
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
             x_displaced_image = self.apply_displacement(x_displaced_image, Zx_disp, 0)
             y_displaced_image = self.apply_displacement(y_displaced_image, 0, Zy_dsip)
+
+            self.frame_2 = displaced_image
+            self.displacement_x = Zx_disp
+            self.displacement_y = Zy_dsip
 
             binarized_image = np.where(displaced_image > 128, 1, 0)
             self.displaced_image_stack.append(binarized_image)            
@@ -160,6 +179,16 @@ class Apply_Displacement:
             x_displaced_image_plot.set_data(x_displaced_image)
             y_displaced_image_plot.set_data(y_displaced_image)
             
+            if self.save_mode:
+                #generate random probability to save the frame
+                if np.random.rand() > 0.5:
+                    base_name = os.path.basename(self.image_path)
+                    base_name = os.path.splitext(base_name)[0]
+                    np.save(f"Saved/Frames/{base_name}_#{self.frame_count}_1",self.frame_1)
+                    np.save(f"Saved/Frames/{base_name}_#{self.frame_count}_2",self.frame_2)
+                    np.save(f"Saved/Displacements/{base_name}_#{self.frame_count}_x",self.displacement_x)
+                    np.save(f"Saved/Displacements/{base_name}_#{self.frame_count}_y",self.displacement_y)                    
+                
 
             return wave_surf, zx_img, zy_img, displaced_image_plot
 
@@ -169,8 +198,17 @@ class Apply_Displacement:
         plt.tight_layout()
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)
+        #check if animation is finished first
+
+        if self.save_mode:
+            #check if file exists
+            trash_path = "trash/wave_displacement.mp4"
+            if os.path.exists(trash_path):
+                os.remove(trash_path)
+            ani.save(trash_path, writer='ffmpeg')            
+        else:
+            plt.show()
         
-        plt.show()
 
     
 
@@ -198,7 +236,13 @@ class Apply_Displacement:
             raise ValueError("Unexpected image shape, unable to load the image properly.")
 
         return self.image
-
+    def check_status(self):
+        if self.finished:
+            print("Applied displacement to all frames")
+            return True
+            
+        else:
+            return False
 # Initialize and run the plot with wave displacements
-displaced_image = Apply_Displacement()
-displaced_image.plot()
+# displaced_image = Apply_Displacement(path='/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient030/patient030_frame12_slice_8_ACDC.npy', save_mode=True)
+# displaced_image.plot() 

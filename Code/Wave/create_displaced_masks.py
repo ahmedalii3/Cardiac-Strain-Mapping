@@ -15,11 +15,12 @@ os.chdir(os.path.dirname(__file__)) #change working directory to current directo
 
 
 
-class Apply_Displacement:
-    def __init__(self):
+class Create_Displacement_Masks:
+    def __init__(self, path, save_mode=False):
 
         # self.image_path = "SheppLogan_Phantom.svg.png"
-        self.image_path = '/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_3_ACDC.npy'
+        # self.image_path = '/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_3_ACDC.npy'
+        self.image_path = path
         self.image = None
         self.wave = Wave_Generator()
         self.param = self.wave.param
@@ -27,6 +28,8 @@ class Apply_Displacement:
         self.displaced_image_stack = []
         self.iterator = 0
         self.mask = None
+        self.frame_count = 0
+        self.save_mode = save_mode
 
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
@@ -50,9 +53,10 @@ class Apply_Displacement:
 
         np.savez_compressed("displaced_images/displaced_images.npz", *self.displaced_image_stack)
 
-        print(f"Displaced images saved to {output_dir}")
+        # print(f"Displaced images saved to {output_dir}")
 
     def plot(self):
+        print("Creating displacement masks...")
         fig = plt.figure(figsize=(20, 10))
         self.displaced_image_stack = []
 
@@ -114,13 +118,16 @@ class Apply_Displacement:
         # Function to update the plots
         def update(frame):
             nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
-            print(frame)
+            # print(frame)
+            self.frame_count += 1
+            if self.frame_count > 30:
+                self.finished = True
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=50, axis=0)
             Zx, Zy = np.gradient(Z)
 
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *47500000
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *47500000
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *5e7
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *5e7
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
@@ -159,7 +166,11 @@ class Apply_Displacement:
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)
         
-        plt.show()
+        if self.save_mode:
+            ani.save('trash/wave_displacement.mp4', writer='ffmpeg')
+        else:
+            plt.show()
+        
 
     
 
@@ -188,7 +199,13 @@ class Apply_Displacement:
             raise ValueError("Unexpected image shape, unable to load the image properly.")
 
         return self.image
+    
+    def check_status(self):
+        if self.finished:
+            return True
+        else:
+            return False
 
 # Initialize and run the plot with wave displacements
-displaced_image = Apply_Displacement()
-displaced_image.plot()
+# displaced_image = Create_Displacement_Masks(path='/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_3_ACDC.npy', save_mode=False)
+# displaced_image.plot()
