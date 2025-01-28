@@ -15,13 +15,8 @@ class Mask_Dilation:
     def import_masks(self, path):
         # Load the .npz file
         self.all_masks = np.load(path)
-        
         # Convert to a regular dictionary for mutability
         self.all_masks = {key: self.all_masks[key].astype(np.float64) for key in self.all_masks.keys()}
-        
-        # Print the keys
-        # print(self.all_masks.keys())
-
     def dilate_mask(self, mask):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
         value = 0.9
@@ -55,14 +50,4 @@ class Mask_Dilation:
 
     def check_status(self):
         return self.finished
-
-
-# mask_dilation = Mask_Dilation()
-# mask_dilation.import_masks('displaced_images/displaced_images.npz')
-# mask_dilation.create_dilated_masks()
-# mask_dilation.save_dilated_masks()
-        
-
-        
-
     

@@ -15,13 +15,10 @@ from wave_genrator import Wave_Generator
 logging.getLogger().setLevel(logging.INFO)  # Allow printing info level logs
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
 
-
-
-class Apply_Displacement:
+DISPLACMENET_MULTIPLAYER = 5e7
+GAUSSIAN_SIGMA = 50
+class Wave_Displacer:
     def __init__(self, path, save_mode=False):
-
-        # self.image_path = "SheppLogan_Phantom.svg.png"
-        # self.image_path = '/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_3_ACDC.npy'
         self.image_path = path
         self.image = None
         self.wave = Wave_Generator()
@@ -77,20 +74,14 @@ class Apply_Displacement:
 
         # Plot the initial data
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
-        Z = gaussian_filter1d(Z, sigma=50, axis=0)
+        Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0) 
 
         # self.masks = np.load('displaced_images/displaced_images.npz')
         self.masks = np.load('dilated_masks/dilated_masks.npz')
         displaced_mask = self.masks['arr_0']
-        # displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        # displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
         displaced_mask = displaced_mask[:,:,0]
         displaced_mask = displaced_mask.astype(np.float64)
-        # displaced_mask = displaced_mask / 255
         Zx, Zy = np.gradient(Z) * displaced_mask
-
-        # Zx, Zy = np.gradient(Z)
-
         binarized_image = np.where(image > 128, 1, 0)
         self.displaced_image_stack.append(binarized_image)
 
@@ -128,25 +119,18 @@ class Apply_Displacement:
         def update(frame):
             nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
-            Z = gaussian_filter1d(Z, sigma=50, axis=0)
+            Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
 
             #get the frame in dispalce_images            
             displaced_mask = self.masks[f'arr_{self.frame_count}']
             self.frame_count += 1
             if self.frame_count > 30:
                 self.finished = True
-            
-            # print(f"arr_{int(frame)}")
-            # displaced_mask = cv2.normalize(displaced_mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-            # displaced_mask = cv2.cvtColor(displaced_mask, cv2.COLOR_RGB2GRAY)
             displaced_mask = displaced_mask[:,:,0]
             displaced_mask = displaced_mask.astype(np.float64)
             Zx, Zy = np.gradient(Z) * displaced_mask
-
-            # Zx, Zy = np.gradient(Z)
-
-            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *5e7
-            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *5e7
+            Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
+            Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             self.frame_1 = displaced_image
@@ -243,6 +227,3 @@ class Apply_Displacement:
             
         else:
             return False
-# Initialize and run the plot with wave displacements
-# displaced_image = Apply_Displacement(path='/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient030/patient030_frame12_slice_8_ACDC.npy', save_mode=True)
-# displaced_image.plot() 
