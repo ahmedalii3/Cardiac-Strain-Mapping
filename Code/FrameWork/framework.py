@@ -4,17 +4,17 @@ from tensorflow import keras
 from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
 import matplotlib.pyplot as plt
 from keras.layers import Input, concatenate, add, Multiply, Lambda
-from keras.layers import Conv3D, MaxPooling3D, MaxPooling2D, UpSampling2D,UpSampling3D, Conv2D
-from keras.layers import Activation
-from keras.layers import BatchNormalization
 from keras.models import Model
 import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from tensorflow.keras.initializers import HeUniform
-from tensorflow.keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, Concatenate, Add, Multiply, BatchNormalization, Activation
 from tensorflow.keras.models import Model
+from pathlib import Path
+import os
+import sys
+sys.path.append(os.path.abspath("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Supervised_deformation/Models"))
+from ResidualUnet import Residual_Unet
 
 class Automate_Training():
     def __init__(self, dataset_path, models_list, save_dir, saved_model_dir):
@@ -49,11 +49,10 @@ class Automate_Training():
             image = image.astype(np.float32)
             #normalize image
             image = image / 255.0
-            print(np.max(image))
-            print(np.min(image))
-            print(image.shape)
+            
+            
             frame_id = file.split('_')[-1].split('.')[0]
-            print(frame_id)
+            
             id = file.split('_')[:-1]
             id = '_'.join(id)
             
@@ -73,12 +72,12 @@ class Automate_Training():
             file_path = os.path.join(Displacement_directory , file)
             image = np.load(file_path)
 
-            print(image.shape)
+            
             frame_id = file.split('_')[-1].split('.')[0]
-            print(frame_id)
+            
             id = file.split('_')[:-1]
             id = '_'.join(id)
-            print(id)
+            
             if frame_id == "x" :
                 x_displacement_dict[id] = image
             else:
@@ -107,12 +106,13 @@ class Automate_Training():
             fixed_input = Input(shape=(128, 128, 1), name="fixed_image")
             moving_input = Input(shape=(128, 128, 1), name="moving_image")
             modelnet = model
+            model_name = model.__class__.__name__
             out_def = modelnet([moving_input, fixed_input])
             model = Model(inputs=[moving_input, fixed_input], outputs=out_def)
 
             model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
 
-            file_name = f"{model}.keras"  # Name files as 1.keras, 2.keras, etc.
+            file_name = f"{model_name}.keras"  
             check_point_path = os.path.join(self.saved_model_dir, file_name)
             # Create an empty .keras file
             open(check_point_path, "w").close()
@@ -135,6 +135,12 @@ class Automate_Training():
                 validation_data=([self.moving_images_test, self.fixed_images_test], self.y_test),
                 callbacks=[checkpoint_callback]
             )
+            #Create folder for the model
+            #mkdir
+            model_folder = os.path.join(self.save_dir, model_name)
+            os.makedirs(model_folder, exist_ok=True)
+
+            
             # Plot the training and validation loss
             plt.plot(history.history['loss'], label='Training Loss')
             plt.plot(history.history['val_loss'], label='Validation Loss')
@@ -142,7 +148,7 @@ class Automate_Training():
             plt.ylabel('Loss')
             plt.title('Loss During Training')
             plt.legend()
-            loss_plot_path = os.path.join(self.save_dir, f"loss_plot{model}.png")
+            loss_plot_path = os.path.join(model_folder, f"loss_plot{model_name}.png")
             plt.savefig(loss_plot_path)
             plt.close()
 
@@ -155,11 +161,26 @@ class Automate_Training():
             )
             ############# save the model results ############
             # Save the evaluation results
-            results_path = os.path.join(self.save_dir, f"evaluation_results{model}.txt")
+            results_path = os.path.join(model_folder, f"evaluation_results{model_name}.txt")
 
             with open(results_path, "w") as f:
                 f.write(f"Test Loss: {test_loss:.4f}\n")
                 f.write(f"Test MAE: {test_mae:.4f}\n")
 
+            # predict and save the prediction
+
+
+
+# main function
+if __name__ == '__main__':
+    dataset_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/Simulated_data_localized"
+    current_script = Path(__file__)
+    models_list = [Residual_Unet()]
+    save_dir = current_script.parent / "Saved"
+    saved_model_dir = current_script.parent / "Models"
+    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(saved_model_dir, exist_ok=True)
+    trainer = Automate_Training(dataset_path, models_list, save_dir, saved_model_dir)
+    trainer.train_models(num_epochs = 2, batch_size = 32)
 
 
