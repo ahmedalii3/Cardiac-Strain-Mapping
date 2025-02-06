@@ -69,9 +69,9 @@ class Upconv_block(tf.keras.Model):
         return x
 
 
-class Residual_Unet(tf.keras.Model):
+class Residual_Unet_3D(tf.keras.Model):
     def __init__(self):
-        super(Residual_Unet, self).__init__()
+        super(Residual_Unet_3D, self).__init__()
 
         # Encoder
         self.conv1 = tf.keras.layers.Conv2D(64, 3, padding='same',strides = 1)
