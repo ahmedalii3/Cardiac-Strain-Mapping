@@ -17,6 +17,15 @@ os.chdir(os.path.dirname(__file__)) #change working directory to current directo
 
 DISPLACMENET_MULTIPLAYER = 5e7
 GAUSSIAN_SIGMA = 50
+
+def save_if_not_exists(file_paths):
+    """Check if any of the files exist"""
+    for path in file_paths:
+        if os.path.exists(path + '.npy'):
+            return False
+    return True
+
+
 class Wave_Displacer:
     def __init__(self, path, save_mode=False):
         self.image_path = path
@@ -165,13 +174,26 @@ class Wave_Displacer:
             
             if self.save_mode:
                 #generate random probability to save the frame
-                if np.random.rand() > 0.5:
-                    base_name = os.path.basename(self.image_path)
-                    base_name = os.path.splitext(base_name)[0]
-                    np.save(f"Saved/Frames/{base_name}_#{self.frame_count}_1",self.frame_1)
-                    np.save(f"Saved/Frames/{base_name}_#{self.frame_count}_2",self.frame_2)
-                    np.save(f"Saved/Displacements/{base_name}_#{self.frame_count}_x",self.displacement_x)
-                    np.save(f"Saved/Displacements/{base_name}_#{self.frame_count}_y",self.displacement_y)                    
+               if np.random.rand() > 0.5:
+                base_name = os.path.basename(self.image_path)
+                base_name = os.path.splitext(base_name)[0]
+                
+                # Create file paths
+                frame1_path = f"Saved/Frames/{base_name}_#{self.frame_count}_1"
+                frame2_path = f"Saved/Frames/{base_name}_#{self.frame_count}_2"
+                disp_x_path = f"Saved/Displacements/{base_name}_#{self.frame_count}_x"
+                disp_y_path = f"Saved/Displacements/{base_name}_#{self.frame_count}_y"
+                
+                # Check if any of the files exist
+                if save_if_not_exists([frame1_path, frame2_path, disp_x_path, disp_y_path]):
+                    # Save all files if none exist
+                    np.save(frame1_path, self.frame_1)
+                    np.save(frame2_path, self.frame_2)
+                    np.save(disp_x_path, self.displacement_x)
+                    np.save(disp_y_path, self.displacement_y)
+                    print(f"Successfully saved files for {base_name}_#{self.frame_count}")
+                else:
+                    print(f"Skipped saving: One or more files already exist for {base_name}_#{self.frame_count}")
                 
 
             return wave_surf, zx_img, zy_img, displaced_image_plot

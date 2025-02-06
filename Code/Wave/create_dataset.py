@@ -39,7 +39,7 @@ size = 0
 processed_combinations = set()
 
 while size < DATASET_SIZE:
-    patient_number = str(np.random.randint(1, 101)).zfill(3)
+    patient_number = str(np.random.randint(1, 51)).zfill(3)
     slice_number = np.random.randint(0, 11)
 
     for frame_number in range(1, 31):
