@@ -83,33 +83,33 @@ class Residual_Unet_2D_7K(tf.keras.Model):
         self.bn2 = tf.keras.layers.BatchNormalization()
         self.add1 = tf.keras.layers.Add()
 
-        self.idblock1 = Identity_block(128, 7, 2)
-        self.idblock2 = Identity_block(256, 7, 2)
-        self.idblock3 = Identity_block(512, 7, 2)
+        self.idblock1 = Identity_block(128, 5, 2)
+        self.idblock2 = Identity_block(256, 3, 2)
+        self.idblock3 = Identity_block(512, 3, 2)
 
         # bridge
-        self.bridge = Identity_block(1024, 7, 2)
+        self.bridge = Identity_block(1024, 3, 2)
 
         # Decoder
         # self.up_concat1 = Upsample_Concatenate_block()
-        self.Upconv1 = Upconv_block(512,7)
+        self.Upconv1 = Upconv_block(512,3)
         self.up_concat1 = tf.keras.layers.Concatenate()
-        self.idblock4 = Identity_block(512, 7, 1)
+        self.idblock4 = Identity_block(512, 3, 1)
 
         # self.up_concat2 = Upsample_Concatenate_block()
-        self.Upconv2 = Upconv_block(256,7)
+        self.Upconv2 = Upconv_block(256,3)
         self.up_concat2 = tf.keras.layers.Concatenate()
-        self.idblock5 = Identity_block(256, 7, 1)
+        self.idblock5 = Identity_block(256, 3, 1)
 
         # self.up_concat3 = Upsample_Concatenate_block()
-        self.Upconv3 = Upconv_block(128,7)
+        self.Upconv3 = Upconv_block(128,3)
         self.up_concat3 = tf.keras.layers.Concatenate()
-        self.idblock6 = Identity_block(128, 7, 1)
+        self.idblock6 = Identity_block(128, 3, 1)
 
         # self.up_concat4 = Upsample_Concatenate_block()
-        self.Upconv4 = Upconv_block(64,7)
+        self.Upconv4 = Upconv_block(64,3)
         self.up_concat4 = tf.keras.layers.Concatenate()
-        self.idblock7 = Identity_block(64, 7, 1)
+        self.idblock7 = Identity_block(64, 3, 1)
 
         self.dense1 = tf.keras.layers.Dense(128, activation='relu')
         self.dense2 = tf.keras.layers.Dense(128, activation='relu')
