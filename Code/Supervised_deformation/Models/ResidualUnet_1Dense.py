@@ -164,14 +164,4 @@ class Residual_Unet_1D(tf.keras.Model):
 
         return output_def
 
-fixed_input = Input(shape=(128, 128, 1), name="fixed_image")
-moving_input = Input(shape=(128, 128, 1), name="moving_image")
-
-resunet = Residual_Unet()
-out_def = resunet([moving_input, fixed_input])
-
-model = Model(inputs=[moving_input, fixed_input], outputs=out_def)
-
-# Print model summary
-model.summary()
 

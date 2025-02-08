@@ -118,13 +118,3 @@ class Unet_2Dense(tf.keras.Model):
         output = self.output_def(conv9)
         return output
 
-fixed_input = Input(shape=(128, 128, 1), name="fixed_image")
-moving_input = Input(shape=(128, 128, 1), name="moving_image")
-
-resunet = Unet_2Dense()
-out_def = resunet([moving_input, fixed_input])
-
-model = Model(inputs=[moving_input, fixed_input], outputs=out_def)
-
-# Print model summary
-model.summary()
