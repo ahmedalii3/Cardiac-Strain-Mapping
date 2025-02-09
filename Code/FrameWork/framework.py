@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 import cv2
 import sys
-sys.path.append(os.path.abspath("Models"))
+sys.path.append(os.path.abspath("Code/Supervised_deformation/Models"))
 # print(str(Path(__file__).parent))
 from ResidualUnet import Residual_Unet
 from Unet import Unet
