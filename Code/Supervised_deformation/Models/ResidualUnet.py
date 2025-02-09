@@ -70,7 +70,7 @@ class Upconv_block(tf.keras.Model):
 
 
 class Residual_Unet(tf.keras.Model):
-    def __init__(self):
+    def __init__(self,trainable = True, dtype=None, **kwargs):
         super(Residual_Unet, self).__init__()
 
         # Encoder

@@ -58,7 +58,7 @@ class Max_pool(tf.keras.Model):
         return x
 
 class Unet(tf.keras.Model):
-    def __init__(self):
+    def __init__(self, trainable = True, dtype=None, **kwargs):
         super(Unet, self).__init__()
         self.conv_block1 = Conv_block(64)
         self.pool1 = Max_pool()
@@ -114,14 +114,16 @@ class Unet(tf.keras.Model):
 
         output = self.output_def(conv9)
         return output
+    
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "input_shape": self.input_shape,
+        })
+        return config
 
-fixed_input = Input(shape=(128, 128, 1), name="fixed_image")
-moving_input = Input(shape=(128, 128, 1), name="moving_image")
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
-resunet = Unet()
-out_def = resunet([moving_input, fixed_input])
 
-model = Model(inputs=[moving_input, fixed_input], outputs=out_def)
-
-# Print model summary
-model.summary()
