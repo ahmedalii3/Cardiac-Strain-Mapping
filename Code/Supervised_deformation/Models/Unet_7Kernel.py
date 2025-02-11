@@ -16,12 +16,12 @@ from tensorflow.keras.initializers import HeUniform
 from tensorflow.keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, Concatenate, Add, Multiply, BatchNormalization, Activation
 from tensorflow.keras.models import Model
 class Conv_block(tf.keras.Model):
-    def __init__(self,num_filters):
+    def __init__(self,num_filters, kernel_size):
         super(Conv_block, self).__init__()
-        self.conv1 = Conv2D(num_filters, 7, padding = 'same', kernel_initializer = 'he_normal')
+        self.conv1 = Conv2D(num_filters, kernel_size, padding = 'same', kernel_initializer = 'he_normal')
         self.bn1 = BatchNormalization()
         self.act1 = Activation('relu')
-        self.conv2 = Conv2D(num_filters, 7, padding = 'same', kernel_initializer = 'he_normal')
+        self.conv2 = Conv2D(num_filters, kernel_size, padding = 'same', kernel_initializer = 'he_normal')
         self.bn2 = BatchNormalization()
         self.act2 = Activation('relu')
         
@@ -37,7 +37,7 @@ class Conv_block(tf.keras.Model):
 class UpConv_block(tf.keras.Model):
     def __init__(self, num_filters):
         super(UpConv_block, self).__init__()
-        self.upconv = Conv2DTranspose(num_filters, 7, strides = 2, padding = 'same')
+        self.upconv = Conv2DTranspose(num_filters, 3, strides = 2, padding = 'same')
         self.bn = BatchNormalization()
         self.act = Activation('relu')
 
@@ -59,17 +59,17 @@ class Max_pool(tf.keras.Model):
 class Unet_7Kernel(tf.keras.Model):
     def __init__(self):
         super(Unet_7Kernel, self).__init__()
-        self.conv_block1 = Conv_block(64)
+        self.conv_block1 = Conv_block(64,7)
         self.pool1 = Max_pool()
-        self.conv_block2 = Conv_block(128)
+        self.conv_block2 = Conv_block(128.5)
         self.pool2 = Max_pool()
-        self.conv_block3 = Conv_block(256)
+        self.conv_block3 = Conv_block(256,3)
         self.pool3 = Max_pool()
-        self.conv_block4 = Conv_block(512)
+        self.conv_block4 = Conv_block(512,3)
         self.pool4 = Max_pool()
 
         # bottleneck
-        self.conv_block5 = Conv_block(1024)
+        self.conv_block5 = Conv_block(1024,3)
 
         self.upconv_block1 = UpConv_block(512)
         self.conv_block6 = Conv_block(512)

@@ -10,7 +10,7 @@ from mask_dilation import Mask_Dilation
 from wave_displacement import Wave_Displacer
 # ================== Configuration ==================
 NEW_DATASET = False
-DATASET_SIZE = 700
+DATASET_SIZE = 1500
 
 # Get path to current script (create_dataset.py)
 current_script = Path(__file__)
