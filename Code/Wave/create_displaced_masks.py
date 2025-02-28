@@ -9,11 +9,14 @@ import cv2
 from PIL import Image as im 
 
 from wave_genrator import Wave_Generator
+from displ_strain_conversion import strain_validation
 
 logging.getLogger().setLevel(logging.INFO)  # Allow printing info level logs
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
 
-
+delta_x = 1.0
+delta_y = 1.0
+strain_ep_peak = 0.1
 
 class Create_Displacement_Masks:
     def __init__(self, path, save_mode=False):
@@ -23,11 +26,14 @@ class Create_Displacement_Masks:
         self.param = self.wave.param
         self.H0, self.W, self.Grid_Sign = self.wave.initialize_wave()
         self.displaced_image_stack = []
+        self.strain_values = []
         self.iterator = 0
         self.mask = None
         self.frame_count = 0
         self.save_mode = save_mode
+        self.finished = False
 
+        self.plot_strain = True
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
         height, width, _ = image.shape
@@ -48,12 +54,13 @@ class Create_Displacement_Masks:
         output_dir = "displaced_images_test"
         os.makedirs(output_dir, exist_ok=True)
         np.savez_compressed("displaced_images/displaced_images.npz", *self.displaced_image_stack)
+        np.savez_compressed("strain_values.npz", *self.strain_values)
 
     def plot(self):
         print("Creating displacement masks...")
         fig = plt.figure(figsize=(20, 10))
         self.displaced_image_stack = []
-
+        fig.set_facecolor('#eeeeef')
         # Setup subplots
         ax_wave = fig.add_subplot(2, 5, 4, projection='3d')  # 3D wave plot
         ax_zx = fig.add_subplot(2, 5, 2)
@@ -95,12 +102,14 @@ class Create_Displacement_Masks:
         displaced_image_plot = ax_displaced.imshow(displaced_image,cmap='viridis')
         x_displaced_image_plot = ax_x_displacement.imshow(x_displaced_image)
         y_displaced_image_plot = ax_y_displacement.imshow(y_displaced_image)
+
+        ax_displaced.set_facecolor('#eeeeef')
         # Function to update the plots
         def update(frame):
             nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
             # print(frame)
             self.frame_count += 1
-            if self.frame_count > 30:
+            if self.frame_count >= 30:
                 self.finished = True
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=50, axis=0)
@@ -108,6 +117,45 @@ class Create_Displacement_Masks:
 
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *5e7
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *5e7
+
+            print(f"Max Value in Zx before strain validation: {np.max(Zx_disp)}")
+            Zx_disp, Zy_dsip,_,_,max_ep,initial,last = strain_validation(Zx_disp, Zy_dsip, delta_x, delta_y, strain_ep_peak)
+            if(self.plot_strain):
+                fig, axes = plt.subplots(2, 2, figsize=(16, 14))
+                # Increase spacing between subplots
+                plt.subplots_adjust(hspace=0.5, wspace=0.4)
+
+                # Plot initial strain map
+                im1 = axes[0,0].imshow(initial)
+                axes[0,0].set_title('Initial Strain', pad=20, fontsize=12)
+                plt.colorbar(im1, ax=axes[0,0], pad=0.1)
+
+                # Plot last strain map
+                im2 = axes[0,1].imshow(last)
+                axes[0,1].set_title('Last Strain', pad=20, fontsize=12)
+                plt.colorbar(im2, ax=axes[0,1], pad=0.1)
+
+                # Plot initial histogram
+                axes[1,0].hist(initial.flatten(), bins=50, color='blue', alpha=0.7)
+                axes[1,0].set_title('Initial Strain Histogram', pad=20, fontsize=12)
+                axes[1,0].set_xlabel('Strain Value')
+                axes[1,0].set_ylabel('Frequency')
+
+                # Plot last histogram
+                axes[1,1].hist(last.flatten(), bins=50, color='red', alpha=0.7)
+                axes[1,1].set_title('Last Strain Histogram', pad=20, fontsize=12)
+                axes[1,1].set_xlabel('Strain Value')
+                axes[1,1].set_ylabel('Frequency')
+
+                # Adjust layout with padding
+                plt.tight_layout(pad=3.0)
+                plt.show()
+                self.plot_strain = False
+
+            print(f"Max Value in Zx after: {np.max(Zx_disp)}")
+            print(f"Max strain value: {max_ep}")
+            self.strain_values.append(max_ep)
+            
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
@@ -131,13 +179,14 @@ class Create_Displacement_Masks:
             x_displaced_image_plot.set_data(x_displaced_image)
             y_displaced_image_plot.set_data(y_displaced_image)
 
-            self.save_stack()
+            # self.save_stack()
+            print(f"Finished? : {self.finished}")
 
             return wave_surf, zx_img, zy_img, displaced_image_plot
 
 
         # Animate the wave and displacements
-        ani = FuncAnimation(fig, update, frames=np.linspace(0, 30, 30), blit=False, repeat=False)
+        ani = FuncAnimation(fig, update, frames=np.linspace(0, 31, 31), blit=False, repeat=False)
         plt.tight_layout()
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)
@@ -181,3 +230,5 @@ class Create_Displacement_Masks:
             return True
         else:
             return False
+displacer = Create_Displacement_Masks(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
+displacer.plot()

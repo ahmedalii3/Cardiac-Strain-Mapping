@@ -38,6 +38,7 @@ class Mask_Dilation:
         self.dilated_masks = {}
         for key in self.all_masks.keys():
             self.dilated_masks[key] = self.dilate_mask(self.all_masks[key])
+            print(f"dilating mask number : {key}")
         return self.dilated_masks
     
     def save_dilated_masks(self):
@@ -51,3 +52,8 @@ class Mask_Dilation:
     def check_status(self):
         return self.finished
     
+# mask_dilation = Mask_Dilation()
+# mask_dilation.import_masks('displaced_images/displaced_images.npz')
+# mask_dilation.create_dilated_masks()
+# mask_dilation.save_dilated_masks()
+        

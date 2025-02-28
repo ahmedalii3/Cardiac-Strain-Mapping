@@ -10,7 +10,8 @@ from mask_dilation import Mask_Dilation
 from wave_displacement import Wave_Displacer
 # ================== Configuration ==================
 NEW_DATASET = False
-DATASET_SIZE = 1500
+DATASET_SIZE = 20
+
 
 # Get path to current script (create_dataset.py)
 current_script = Path(__file__)
@@ -20,8 +21,8 @@ project_root = current_script.parent.parent.parent  # Goes up from Code/Wave to 
 data_dir = project_root / "Data" / "ACDC" / "train_numpy"
 
 # Define important directories
-saved_displacements = current_script.parent / "Saved" / "Displacements"
-saved_frames = current_script.parent / "Saved" / "Frames"
+saved_displacements = current_script.parent / "Saved_test" / "Displacements"
+saved_frames = current_script.parent / "Saved_test" / "Frames"
 
 # Create directories if they don't exist
 for directory in [saved_displacements, saved_frames]:

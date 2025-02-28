@@ -74,9 +74,12 @@ class Wave_Generator():
 
     def init_gui(self):
         fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        fig.patch.set_facecolor('#eeeeef')
         x = np.linspace(self.param['xLim'][0], self.param['xLim'][1], self.param['meshsize'])
         y = np.linspace(self.param['yLim'][0], self.param['yLim'][1], self.param['meshsize'])
         X, Y = np.meshgrid(x, y)
+        ax.set_axis_off()
+        ax.set_facecolor("#eeeeef")
 
         H0, W, Grid_Sign = self.initialize_wave()
 
@@ -97,6 +100,8 @@ class Wave_Generator():
             ax.set_xlim(self.param['xLim'])
             ax.set_ylim(self.param['yLim'])
             ax.set_zlim(self.param['zLim'])
+            ax.set_axis_off()
+            ax.set_facecolor("#eeeeef")
             return surf,
         
 

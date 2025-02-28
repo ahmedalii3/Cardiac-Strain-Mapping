@@ -1,6 +1,6 @@
 import numpy as np
-
-def calculate_strain_and_displacement(frame_displ_x, frame_displ_y, delta_x, delta_y, strain_ep_peak, cine_no_frames):
+import math
+def strain_validation(frame_displ_x, frame_displ_y, delta_x, delta_y, strain_ep_peak, save = False):
     """
     Calculate strain tensors and adjust displacements to maintain strain thresholds.
     
@@ -10,13 +10,13 @@ def calculate_strain_and_displacement(frame_displ_x, frame_displ_y, delta_x, del
     delta_x (float): X-direction spatial step
     delta_y (float): Y-direction spatial step
     strain_ep_peak (float): Maximum allowable strain threshold
-    cine_no_frames (int): Number of frames (not used in current implementation)
     
     Returns:
     tuple: Updated frame_displ_x, frame_displ_y, max_displ, min_displ
     """
-    delta_t = 1
+    # delta_t = 1
     over_strain = True
+    initial_saved = False
     
     while over_strain:
         # UX, UY are the x and y displacements at specific spatial points
@@ -52,6 +52,11 @@ def calculate_strain_and_displacement(frame_displ_x, frame_displ_y, delta_x, del
         ep1_all = np.maximum(ep1_all, ep2_all)
         ep2_all = np.minimum(ep2_all, ep3_all)
         ep3_all = 1 / ((1 + ep1_all) * (1 + ep2_all)) - 1
+
+        if not initial_saved:
+            initial_strain = ep1_all
+            last_strain = ep1_all
+            initial_saved = True
         
         # Check if strains exceed threshold
         max_ep = max(
@@ -60,16 +65,21 @@ def calculate_strain_and_displacement(frame_displ_x, frame_displ_y, delta_x, del
             np.max(np.abs(ep3_all))
         )
         
-        if max_ep > strain_ep_peak:
-            scale_factor = max(0.95, strain_ep_peak / max_ep)
-            frame_displ_x *= scale_factor
-            frame_displ_y *= scale_factor
-            over_strain = True
-        else:
-            over_strain = False
+        # if max_ep -0.1001 > 0:
+        #     print(f"Debugging max_ep: {max_ep}, strain_ep_peak: {strain_ep_peak}")
+        #     scale_factor = max(0.95, strain_ep_peak / max_ep)
+        #     frame_displ_x *= scale_factor
+        #     frame_displ_y *= scale_factor
+        #     over_strain = True
+        #     print(f"current Max_ep: {max_ep}")
+        # else:
+        #     over_strain = False
+        #     last_strain = ep1_all
+        over_strain = False
+        
     
     # Calculate maximum and minimum displacements
     max_displ = max(np.max(ux), np.max(uy))
     min_displ = min(np.min(ux), np.min(uy))
     
-    return frame_displ_x, frame_displ_y, max_displ, min_displ,max_ep
+    return frame_displ_x, frame_displ_y, max_displ, min_displ, max_ep, initial_strain, last_strain

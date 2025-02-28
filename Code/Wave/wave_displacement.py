@@ -9,14 +9,21 @@ import cv2
 from PIL import Image as im 
 import time
 np.random.seed(int(time.time()))  # Dynamically set seed based on current time
+import matplotlib.colors as mcolors
 
 from wave_genrator import Wave_Generator
+from displ_strain_conversion import strain_validation
 
 logging.getLogger().setLevel(logging.INFO)  # Allow printing info level logs
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
 
 DISPLACMENET_MULTIPLAYER = 5e7
 GAUSSIAN_SIGMA = 50
+
+delta_x = 1.0
+delta_y = 1.0
+strain_ep_peak = 0.1
+plot_strain = True
 
 def save_if_not_exists(file_paths):
     """Check if any of the files exist"""
@@ -46,6 +53,8 @@ class Wave_Displacer:
         self.frame_count = 0
         self.finished = False
 
+
+        self.plot_strain = True
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
         height, width, _ = image.shape
@@ -65,6 +74,7 @@ class Wave_Displacer:
 
         # Setup subplots
         ax_wave = fig.add_subplot(2, 5, 4, projection='3d')  # 3D wave plot
+        ax_wave.set_facecolor("#eeeeef")
         ax_zx = fig.add_subplot(2, 5, 2)
         ax_zy = fig.add_subplot(2, 5, 3)
         ax_image = fig.add_subplot(1, 5, 1)
@@ -94,7 +104,7 @@ class Wave_Displacer:
         binarized_image = np.where(image > 128, 1, 0)
         self.displaced_image_stack.append(binarized_image)
 
-        x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)  # Scale by 50 for more visible effect
+        x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)
         y_displacement = np.clip(Zy * 50, -20, 20).astype(np.float32)
         x_displacement = y_displacement = 0
         displaced_image = self.apply_displacement(image, x_displacement, y_displacement)
@@ -107,8 +117,15 @@ class Wave_Displacer:
         # Initial plots
         wave_surf = ax_wave.plot_surface(X, Y, Z, cmap=cm.coolwarm)
         
-        zx_img = ax_zx.imshow(Zx, cmap='coolwarm')
-        zy_img = ax_zy.imshow(Zy, cmap='coolwarm')
+        vmin = min(Zx.min(), Zy.min())
+        vmax = max(Zx.max(), Zy.max())
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+        
+        
+
+        zx_img = ax_zx.imshow(Zx, cmap='RdBu', norm=norm)
+        zy_img = ax_zy.imshow(Zy, cmap='RdBu', norm=norm)
         image_plot = ax_image.imshow(image)
         ax_x_displacement.imshow(image)
         ax_y_displacement.imshow(image)
@@ -116,13 +133,24 @@ class Wave_Displacer:
         x_displaced_image_plot = ax_x_displacement.imshow(x_displaced_image)
         y_displaced_image_plot = ax_y_displacement.imshow(y_displaced_image)
 
-        ax_wave.set_title('3D Wave Surface')
-        ax_zx.set_title('X Displacement (Zx)')
-        ax_zy.set_title('Y Displacement (Zy)')
-        ax_image.set_title('Original Image')
-        ax_displaced.set_title('Displaced Image')
-        ax_x_displacement.set_title('X Displaced Image')
-        ax_y_displacement.set_title('Y Displaced Image')
+        ax_wave.set_title('3D Wave Surface', pad= 10)
+        ax_wave.set_axis_off()
+        ax_zx.set_title('X Displacement (Zx)', pad= 10)
+        ax_zx.set_axis_off()
+        ax_zy.set_title('Y Displacement (Zy)', pad= 10)
+        ax_zy.set_axis_off()
+        ax_image.set_title('Original Image', pad= 10)
+        ax_image.set_axis_off()
+        ax_displaced.set_title('Displaced Image', pad= 10)
+        ax_displaced.set_axis_off()
+        ax_x_displacement.set_title('X Displaced Image', pad= 10)
+        ax_x_displacement.set_axis_off()
+        ax_y_displacement.set_title('Y Displaced Image', pad= 10)
+        ax_y_displacement.set_axis_off()
+        fig.colorbar(zx_img, ax=ax_zx, shrink=0.4)
+        fig.colorbar(zy_img, ax=ax_zy, shrink=0.4)
+        
+        
 
         # Function to update the plots
         def update(frame):
@@ -130,16 +158,54 @@ class Wave_Displacer:
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
 
-            #get the frame in dispalce_images            
-            displaced_mask = self.masks[f'arr_{self.frame_count}']
+            #get the frame in dispalce_images 
+                   
+            displaced_mask = self.masks[f'arr_{self.frame_count+1}']
+            # print(f"Mask used is : {self.frame_count+1}")
             self.frame_count += 1
             if self.frame_count > 30:
                 self.finished = True
             displaced_mask = displaced_mask[:,:,0]
             displaced_mask = displaced_mask.astype(np.float64)
+            
             Zx, Zy = np.gradient(Z) * displaced_mask
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
+
+            Zx_disp, Zy_dsip,_,_,max_ep,initial,last= strain_validation(Zx_disp, Zy_dsip, delta_x, delta_y, strain_ep_peak)
+
+            if(self.plot_strain):
+                fig, axes = plt.subplots(2, 2, figsize=(16, 14))
+                # Increase spacing between subplots
+                plt.subplots_adjust(hspace=0.5, wspace=0.4)
+
+                # Plot initial strain map
+                im1 = axes[0,0].imshow(initial)
+                axes[0,0].set_title('Initial Strain', pad=20, fontsize=12)
+                plt.colorbar(im1, ax=axes[0,0], pad=0.1)
+
+                # Plot last strain map
+                im2 = axes[0,1].imshow(last)
+                axes[0,1].set_title('Last Strain', pad=20, fontsize=12)
+                plt.colorbar(im2, ax=axes[0,1], pad=0.1)
+
+                # Plot initial histogram
+                axes[1,0].hist(initial.flatten(), bins=50, color='blue', alpha=0.7)
+                axes[1,0].set_title('Initial Strain Histogram', pad=20, fontsize=12)
+                axes[1,0].set_xlabel('Strain Value')
+                axes[1,0].set_ylabel('Frequency')
+
+                # Plot last histogram
+                axes[1,1].hist(last.flatten(), bins=50, color='red', alpha=0.7)
+                axes[1,1].set_title('Last Strain Histogram', pad=20, fontsize=12)
+                axes[1,1].set_xlabel('Strain Value')
+                axes[1,1].set_ylabel('Frequency')
+
+                # Adjust layout with padding
+                plt.tight_layout(pad=3.0)
+                plt.show()
+                self.plot_strain = False
+
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             self.frame_1 = displaced_image
@@ -162,6 +228,7 @@ class Wave_Displacer:
             ax_wave.set_xlim(self.param['xLim'])
             ax_wave.set_ylim(self.param['yLim'])
             ax_wave.set_zlim(self.param['zLim'])
+            ax_wave.set_axis_off()
 
             # Update the x and y displacement images
             zx_img.set_data(Zx)
@@ -179,10 +246,10 @@ class Wave_Displacer:
                 base_name = os.path.splitext(base_name)[0]
                 
                 # Create file paths
-                frame1_path = f"Saved/Frames/{base_name}_#{self.frame_count}_1"
-                frame2_path = f"Saved/Frames/{base_name}_#{self.frame_count}_2"
-                disp_x_path = f"Saved/Displacements/{base_name}_#{self.frame_count}_x"
-                disp_y_path = f"Saved/Displacements/{base_name}_#{self.frame_count}_y"
+                frame1_path = f"Saved_test/Frames/{base_name}_#{self.frame_count}_1"
+                frame2_path = f"Saved_test/Frames/{base_name}_#{self.frame_count}_2"
+                disp_x_path = f"Saved_test/Displacements/{base_name}_#{self.frame_count}_x"
+                disp_y_path = f"Saved_test/Displacements/{base_name}_#{self.frame_count}_y"
                 
                 # Check if any of the files exist
                 if save_if_not_exists([frame1_path, frame2_path, disp_x_path, disp_y_path]):
@@ -249,3 +316,7 @@ class Wave_Displacer:
             
         else:
             return False
+        
+
+displacer = Wave_Displacer(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
+displacer.plot()
