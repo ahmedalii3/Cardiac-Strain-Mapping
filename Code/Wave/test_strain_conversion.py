@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 from displ_strain_conversion import strain_validation
 # Example input arrays (assuming proper shapes)
 # frame_displ_x = np.zeros((100, 100, 10))  # Example dimensions
-# frame_displ_x = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_x.npy")
-# frame_displ_y = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_y.npy")  # Example dimensions
-frame_displ_x = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient020_frame11_slice_0_ACDC_#1_x.npy")
-frame_displ_y = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient020_frame11_slice_0_ACDC_#1_x.npy")  # Example dimensions
+frame_displ_x = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_x.npy")
+frame_displ_y = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_y.npy")  # Example dimensions
+# frame_displ_x = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient020_frame11_slice_0_ACDC_#1_x.npy")
+# frame_displ_y = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient020_frame11_slice_0_ACDC_#1_y.npy")  # Example dimensions
 delta_x = 1.0
 delta_y = 1.0
 strain_ep_peak = 0.1
@@ -50,3 +50,4 @@ axes[1,1].set_ylabel('Frequency')
 # Adjust layout with padding
 plt.tight_layout(pad=3.0)
 plt.show()
+

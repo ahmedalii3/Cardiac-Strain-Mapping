@@ -12,18 +12,13 @@ np.random.seed(int(time.time()))  # Dynamically set seed based on current time
 import matplotlib.colors as mcolors
 
 from wave_genrator import Wave_Generator
-from displ_strain_conversion import strain_validation
+from strain_validation import limit_strain_range, plot_strain_results
 
 logging.getLogger().setLevel(logging.INFO)  # Allow printing info level logs
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
 
 DISPLACMENET_MULTIPLAYER = 5e7
 GAUSSIAN_SIGMA = 50
-
-delta_x = 1.0
-delta_y = 1.0
-strain_ep_peak = 0.1
-plot_strain = True
 
 def save_if_not_exists(file_paths):
     """Check if any of the files exist"""
@@ -43,18 +38,15 @@ class Wave_Displacer:
         self.displaced_image_stack = []
         self.iterator = 0
         self.mask = None
-        
         self.save_mode = save_mode
         self.frame_1 = None
         self.frame_2 = None
         self.displacement_x = None
         self.displacement_y = None
-
         self.frame_count = 0
         self.finished = False
+        self.plot_strain = False
 
-
-        self.plot_strain = True
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
         height, width, _ = image.shape
@@ -82,7 +74,6 @@ class Wave_Displacer:
         ax_x_displacement = fig.add_subplot(1, 5, 2)
         ax_y_displacement = fig.add_subplot(1, 5, 3)
 
-
         # Load the initial image
         image = self.load_image()
 
@@ -103,27 +94,20 @@ class Wave_Displacer:
         Zx, Zy = np.gradient(Z) * displaced_mask
         binarized_image = np.where(image > 128, 1, 0)
         self.displaced_image_stack.append(binarized_image)
-
         x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)
         y_displacement = np.clip(Zy * 50, -20, 20).astype(np.float32)
         x_displacement = y_displacement = 0
         displaced_image = self.apply_displacement(image, x_displacement, y_displacement)
         x_displaced_image = self.apply_displacement(image, x_displacement, 0)
         y_displaced_image = self.apply_displacement(image, 0, y_displacement)
-
         binarized_image = np.where(displaced_image > 128, 1, 0)
         self.displaced_image_stack.append(binarized_image)
 
         # Initial plots
-        wave_surf = ax_wave.plot_surface(X, Y, Z, cmap=cm.coolwarm)
-        
+        wave_surf = ax_wave.plot_surface(X, Y, Z, cmap=cm.coolwarm) 
         vmin = min(Zx.min(), Zy.min())
         vmax = max(Zx.max(), Zy.max())
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
-
-        
-        
-
         zx_img = ax_zx.imshow(Zx, cmap='RdBu', norm=norm)
         zy_img = ax_zy.imshow(Zy, cmap='RdBu', norm=norm)
         image_plot = ax_image.imshow(image)
@@ -149,8 +133,6 @@ class Wave_Displacer:
         ax_y_displacement.set_axis_off()
         fig.colorbar(zx_img, ax=ax_zx, shrink=0.4)
         fig.colorbar(zy_img, ax=ax_zy, shrink=0.4)
-        
-        
 
         # Function to update the plots
         def update(frame):
@@ -159,9 +141,7 @@ class Wave_Displacer:
             Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
 
             #get the frame in dispalce_images 
-                   
             displaced_mask = self.masks[f'arr_{self.frame_count+1}']
-            # print(f"Mask used is : {self.frame_count+1}")
             self.frame_count += 1
             if self.frame_count > 30:
                 self.finished = True
@@ -172,40 +152,18 @@ class Wave_Displacer:
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
 
-            Zx_disp, Zy_dsip,_,_,max_ep,initial,last= strain_validation(Zx_disp, Zy_dsip, delta_x, delta_y, strain_ep_peak)
+            # Limit the strain range
+            result = limit_strain_range(Zx_disp, Zy_dsip, strain_lower_bound=0, strain_upper_bound=0.1)
+            Zx_disp, Zy_dsip, initial_strain, final_strain, max_initial, max_final, min_initial, min_final = result
 
             if(self.plot_strain):
-                fig, axes = plt.subplots(2, 2, figsize=(16, 14))
-                # Increase spacing between subplots
-                plt.subplots_adjust(hspace=0.5, wspace=0.4)
-
-                # Plot initial strain map
-                im1 = axes[0,0].imshow(initial)
-                axes[0,0].set_title('Initial Strain', pad=20, fontsize=12)
-                plt.colorbar(im1, ax=axes[0,0], pad=0.1)
-
-                # Plot last strain map
-                im2 = axes[0,1].imshow(last)
-                axes[0,1].set_title('Last Strain', pad=20, fontsize=12)
-                plt.colorbar(im2, ax=axes[0,1], pad=0.1)
-
-                # Plot initial histogram
-                axes[1,0].hist(initial.flatten(), bins=50, color='blue', alpha=0.7)
-                axes[1,0].set_title('Initial Strain Histogram', pad=20, fontsize=12)
-                axes[1,0].set_xlabel('Strain Value')
-                axes[1,0].set_ylabel('Frequency')
-
-                # Plot last histogram
-                axes[1,1].hist(last.flatten(), bins=50, color='red', alpha=0.7)
-                axes[1,1].set_title('Last Strain Histogram', pad=20, fontsize=12)
-                axes[1,1].set_xlabel('Strain Value')
-                axes[1,1].set_ylabel('Frequency')
-
-                # Adjust layout with padding
-                plt.tight_layout(pad=3.0)
-                plt.show()
+                plot_strain_results(
+                    initial_strain, final_strain, 
+                    min_initial, max_initial, 
+                    min_final, max_final,
+                    strain_lower_bound = 0, strain_upper_bound = 0.1
+                    )
                 self.plot_strain = False
-
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             self.frame_1 = displaced_image
@@ -213,11 +171,9 @@ class Wave_Displacer:
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
             x_displaced_image = self.apply_displacement(x_displaced_image, Zx_disp, 0)
             y_displaced_image = self.apply_displacement(y_displaced_image, 0, Zy_dsip)
-
             self.frame_2 = displaced_image
             self.displacement_x = Zx_disp
             self.displacement_y = Zy_dsip
-
             binarized_image = np.where(displaced_image > 128, 1, 0)
             self.displaced_image_stack.append(binarized_image)            
 
@@ -282,9 +238,7 @@ class Wave_Displacer:
         else:
             plt.show()
         
-
-    
-
+        
     def load_image(self):
         # Load the image array from the .npy file
         array = np.load(self.image_path)
