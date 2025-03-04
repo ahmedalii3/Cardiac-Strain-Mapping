@@ -141,7 +141,7 @@ class Wave_Displacer:
             Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
 
             #get the frame in dispalce_images 
-            displaced_mask = self.masks[f'arr_{self.frame_count+1}']
+            displaced_mask = self.masks[f'arr_{self.frame_count}']
             self.frame_count += 1
             if self.frame_count > 30:
                 self.finished = True
@@ -272,5 +272,5 @@ class Wave_Displacer:
             return False
         
 
-displacer = Wave_Displacer(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
-displacer.plot()
+# displacer = Wave_Displacer(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
+# displacer.plot()

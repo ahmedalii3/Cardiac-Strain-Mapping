@@ -53,8 +53,8 @@ class Mask_Dilation:
     def check_status(self):
         return self.finished
     
-mask_dilation = Mask_Dilation()
-mask_dilation.import_masks('displaced_images/displaced_images.npz')
-mask_dilation.create_dilated_masks()
-mask_dilation.save_dilated_masks()
+# mask_dilation = Mask_Dilation()
+# mask_dilation.import_masks('displaced_images/displaced_images.npz')
+# mask_dilation.create_dilated_masks()
+# mask_dilation.save_dilated_masks()
         

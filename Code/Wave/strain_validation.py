@@ -291,9 +291,12 @@ if __name__ == "__main__":
     # Set strain peak limit
     strain_peak = 0.1
 
-    displacement_x = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_x.npy")
-    displacement_y = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_y.npy")  # Example dimensions
-    
+    # displacement_x = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_x.npy")
+    # displacement_y = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_y.npy")  # Example dimensions
+    displacement_x = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient050_frame12_slice_2_ACDC_#24_x.npy")
+    displacement_y = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient050_frame12_slice_2_ACDC_#24_y.npy")  # Example dimensions
+
+
     # Apply strain limiting
     strain_lower_bound = 0    # Minimum desired strain
     strain_upper_bound = 0.1  # Maximum allowable strain

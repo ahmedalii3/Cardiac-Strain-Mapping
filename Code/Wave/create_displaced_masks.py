@@ -118,7 +118,7 @@ class Create_Displacement_Masks:
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) * DISPLACMENET_MULTIPLAYER
 
             print(f"Max Value in Zx before strain validation: {np.max(Zx_disp)}")
-            result = limit_strain_range(Zx_disp, Zy_dsip, strain_lower_bound=0, strain_upper_bound=0.3)
+            result = limit_strain_range(Zx_disp, Zy_dsip, strain_lower_bound=0, strain_upper_bound=0.1)
             Zx_disp, Zy_dsip, initial_strain, final_strain, max_initial, max_final, min_initial, min_final = result
 
             if(self.plot_strain): 
@@ -201,5 +201,6 @@ class Create_Displacement_Masks:
             return True
         else:
             return False
-displacer = Create_Displacement_Masks(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
-displacer.plot()
+
+# displacer = Create_Displacement_Masks(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
+# displacer.plot()
