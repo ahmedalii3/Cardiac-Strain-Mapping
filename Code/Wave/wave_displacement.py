@@ -46,7 +46,6 @@ class Wave_Displacer:
         self.frame_count = 0
         self.finished = False
         self.plot_strain = False
-
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
         height, width, _ = image.shape
@@ -148,12 +147,14 @@ class Wave_Displacer:
             displaced_mask = displaced_mask[:,:,0]
             displaced_mask = displaced_mask.astype(np.float64)
             
-            Zx, Zy = np.gradient(Z) * displaced_mask
+            Zx, Zy = np.gradient(Z)
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
-
+            Zx_disp = Zx_disp * displaced_mask
+            Zy_dsip = Zy_dsip * displaced_mask
+            
             # Limit the strain range
-            result = limit_strain_range(Zx_disp, Zy_dsip, strain_lower_bound=0, strain_upper_bound=0.1)
+            result = limit_strain_range(Zx_disp, Zy_dsip, stretch=False, strain_upper_bound=0.4)
             Zx_disp, Zy_dsip, initial_strain, final_strain, max_initial, max_final, min_initial, min_final = result
 
             if(self.plot_strain):
@@ -165,9 +166,12 @@ class Wave_Displacer:
                     )
                 self.plot_strain = False
 
+
+            # Zx_disp = Zx_disp * displaced_mask
+            # Zy_dsip = Zy_dsip * displaced_mask
+
             # Apply the displacements to the previously displaced image (cumulative effect)
             self.frame_1 = displaced_image
-            
             displaced_image = self.apply_displacement(displaced_image, Zx_disp, Zy_dsip)
             x_displaced_image = self.apply_displacement(x_displaced_image, Zx_disp, 0)
             y_displaced_image = self.apply_displacement(y_displaced_image, 0, Zy_dsip)
@@ -187,8 +191,8 @@ class Wave_Displacer:
             ax_wave.set_axis_off()
 
             # Update the x and y displacement images
-            zx_img.set_data(Zx)
-            zy_img.set_data(Zy)
+            zx_img.set_data(Zx * displaced_mask)
+            zy_img.set_data(Zy * displaced_mask)
 
             # Update the displaced image plot            
             displaced_image_plot.set_data(displaced_image)
@@ -217,8 +221,6 @@ class Wave_Displacer:
                     print(f"Successfully saved files for {base_name}_#{self.frame_count}")
                 else:
                     print(f"Skipped saving: One or more files already exist for {base_name}_#{self.frame_count}")
-                
-
             return wave_surf, zx_img, zy_img, displaced_image_plot
 
 
@@ -272,5 +274,5 @@ class Wave_Displacer:
             return False
         
 
-# displacer = Wave_Displacer(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
-# displacer.plot()
+displacer = Wave_Displacer(path="/Users/osama/GP-2025-Strain/Code/Wave/Images/patient001_frame01_slice_5_ACDC.npy")
+displacer.plot()

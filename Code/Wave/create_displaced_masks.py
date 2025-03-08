@@ -108,7 +108,7 @@ class Create_Displacement_Masks:
             nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
             # print(frame)
             self.frame_count += 1
-            if self.frame_count >= 30:
+            if self.frame_count > 30:
                 self.finished = True
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
             Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
@@ -118,15 +118,16 @@ class Create_Displacement_Masks:
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) * DISPLACMENET_MULTIPLAYER
 
             print(f"Max Value in Zx before strain validation: {np.max(Zx_disp)}")
-            result = limit_strain_range(Zx_disp, Zy_dsip, strain_lower_bound=0, strain_upper_bound=0.1)
+            result = limit_strain_range(Zx_disp, Zy_dsip, stretch = True, strain_upper_bound=0.4)
             Zx_disp, Zy_dsip, initial_strain, final_strain, max_initial, max_final, min_initial, min_final = result
+            print(f"Max Value in Zx after strain validation: {np.max(Zx_disp)}")
 
             if(self.plot_strain): 
                 plot_strain_results(
                     initial_strain, final_strain, 
                     min_initial, max_initial, 
                     min_final, max_final,
-                    strain_lower_bound = 0, strain_upper_bound = 0.1
+                    strain_lower_bound = 0, strain_upper_bound = 0.4
                     )
                 self.plot_strain = False
 
@@ -152,14 +153,15 @@ class Create_Displacement_Masks:
             x_displaced_image_plot.set_data(x_displaced_image)
             y_displaced_image_plot.set_data(y_displaced_image)
 
-            # self.save_stack()
-            print(f"Finished? : {self.finished}")
-
+            if(self.frame_count>30):
+                self.save_stack()
+                print(f"Finished? : {self.finished}")
+            print(f"Frame #{self.frame_count}")
             return wave_surf, zx_img, zy_img, displaced_image_plot
 
 
         # Animate the wave and displacements
-        ani = FuncAnimation(fig, update, frames=np.linspace(0, 31, 31), blit=False, repeat=False)
+        ani = FuncAnimation(fig, update, frames=np.linspace(0, 30, 30), blit=False, repeat=False)
         plt.tight_layout()
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)
@@ -202,5 +204,5 @@ class Create_Displacement_Masks:
         else:
             return False
 
-# displacer = Create_Displacement_Masks(path="/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy/patient001/patient001_frame01_slice_5_ACDC.npy")
-# displacer.plot()
+displacer = Create_Displacement_Masks(path="/Users/osama/GP-2025-Strain/Code/Wave/Images/patient001_frame01_slice_5_ACDC.npy")
+displacer.plot()

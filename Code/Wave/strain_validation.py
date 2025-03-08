@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-def limit_strain_range(displacement_x, displacement_y, strain_lower_bound, strain_upper_bound, 
+def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bound, 
                      reduction_factor=0.99, amplification_factor=1.01, max_iterations=1000, tolerance=1e-6):
     """
     Convert displacement maps to strain tensors using Eulerian strain formulation.
@@ -36,6 +36,10 @@ def limit_strain_range(displacement_x, displacement_y, strain_lower_bound, strai
     # Ensure input arrays have the same shape
     if displacement_x.shape != displacement_y.shape:
         raise ValueError("Displacement maps must have the same shape")
+    if stretch:
+        strain_lower_bound = 0.01
+    else:
+        strain_lower_bound = 0
     
     # Make copies of the input arrays to avoid modifying the originals
     dx = displacement_x.copy()
@@ -273,9 +277,9 @@ def plot_strain_results(initial_strain_tensor, final_strain_tensor, min_initial_
     
     ## Set common x-axis limits for histograms after 0.0(Background)##
     
-    # axes[1,1].set_xlim(0.01,0.3)
+    # axes[1,1].set_xlim(0.01,0.5)
     # axes[1,1].set_ylim(0,1000)
-    # axes[1,0].set_xlim(0.01,0.3)
+    # axes[1,0].set_xlim(0.01,0.5)
     # axes[1,0].set_ylim(0,1000)
     
     axes[1, 1].legend()
@@ -291,15 +295,14 @@ if __name__ == "__main__":
     # Set strain peak limit
     strain_peak = 0.1
 
-    # displacement_x = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_x.npy")
-    # displacement_y = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated_data_localized/Displacements_Loc/patient002_frame12_slice_1_ACDC_#1_y.npy")  # Example dimensions
-    displacement_x = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient050_frame12_slice_2_ACDC_#24_x.npy")
-    displacement_y = np.load("/Users/osama/GP-2025-Strain/Code/Wave/Saved_test/Displacements/patient050_frame12_slice_2_ACDC_#24_y.npy")  # Example dimensions
-
+    # displacement_x = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated Data 04-03-2025/2-steps validations/Displacements_loc/patient031_frame10_slice_8_ACDC_#1_x.npy")
+    # displacement_y = np.load("/Users/osama/GP-2025-Strain/Data/ACDC/Simulated Data 04-03-2025/2-steps validations/Displacements_loc/patient031_frame10_slice_8_ACDC_#1_y.npy")
+    displacement_x = np.load("Data/ACDC/Simulated Data 04-03-2025/Post-simulation validation/Displacements_loc/patient029_frame12_slice_8_ACDC_#1_x.npy")
+    displacement_y = np.load("Data/ACDC/Simulated Data 04-03-2025/Post-simulation validation/Displacements_loc/patient029_frame12_slice_8_ACDC_#1_y.npy")
 
     # Apply strain limiting
-    strain_lower_bound = 0    # Minimum desired strain
-    strain_upper_bound = 0.1  # Maximum allowable strain
+    strain_lower_bound = 0.1    # Minimum desired strain
+    strain_upper_bound = 0.4  # Maximum allowable strain
     
     # Apply strain limiting/amplification
     result = limit_strain_range(

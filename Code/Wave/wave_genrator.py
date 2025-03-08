@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cm
-import random
 
 class Wave_Generator():
     def __init__(self):

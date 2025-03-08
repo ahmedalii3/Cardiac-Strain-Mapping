@@ -1,5 +1,4 @@
 import numpy as np
-
 def strain_conversion(frame_displ_x, frame_displ_y):
     """
     Calculate strain tensors
