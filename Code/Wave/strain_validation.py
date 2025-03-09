@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bound, 
                      reduction_factor=0.99, amplification_factor=1.01, max_iterations=1000, tolerance=1e-6):
     """
@@ -77,9 +77,9 @@ def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bou
     
     # Calculate Eulerian strain tensor components
     # E = 1/2 * (∇u + ∇u^T + ∇u^T∇u)
-    E_xx_initial = 0.5 * (2*dudx_initial + dudx_initial**2 + dvdx_initial**2)
-    E_yy_initial = 0.5 * (2*dvdy_initial + dudy_initial**2 + dvdy_initial**2)
-    E_xy_initial = 0.5 * (dudy_initial + dvdx_initial + dudx_initial*dudy_initial + dvdx_initial*dvdy_initial)
+    E_xx_initial = 0.5 * (2*dudx_initial - dudx_initial**2 - dvdx_initial**2)
+    E_yy_initial = 0.5 * (2*dvdy_initial - dudy_initial**2 - dvdy_initial**2)
+    E_xy_initial = 0.5 * (dudy_initial + dvdx_initial - dudx_initial*dudy_initial - dvdx_initial*dvdy_initial)
     
     # Calculate principal strains
     avg_normal_strain_initial = (E_xx_initial + E_yy_initial) / 2
@@ -88,6 +88,8 @@ def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bou
     
     E1_initial = avg_normal_strain_initial + radius_initial  # Maximum principal strain
     E2_initial = avg_normal_strain_initial - radius_initial  # Minimum principal strain
+
+    E3_initial = 1 / ((1 + E1_initial) * (1 + E2_initial)) - 1
     
     # Find maximum and minimum absolute strain values
     max_initial_strain = max(np.max(np.abs(E1_initial)), np.max(np.abs(E2_initial)))
@@ -100,6 +102,7 @@ def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bou
         'E_xy': E_xy_initial,
         'E1': E1_initial,
         'E2': E2_initial,
+        'E3': E3_initial,
         'min_abs_strain': min_initial_strain,
         'max_abs_strain': max_initial_strain
     }
@@ -166,9 +169,9 @@ def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bou
         
         # Calculate Eulerian strain tensor components
         # E = 1/2 * (∇u + ∇u^T + ∇u^T∇u)
-        E_xx = 0.5 * (2*dudx + dudx**2 + dvdx**2)
-        E_yy = 0.5 * (2*dvdy + dudy**2 + dvdy**2)
-        E_xy = 0.5 * (dudy + dvdx + dudx*dudy + dvdx*dvdy)
+        E_xx = 0.5 * (2*dudx - dudx**2 - dvdx**2)
+        E_yy = 0.5 * (2*dvdy - dudy**2 - dvdy**2)
+        E_xy = 0.5 * (dudy + dvdx - dudx*dudy - dvdx*dvdy)
         
         # Calculate principal strains
         avg_normal_strain = (E_xx + E_yy) / 2
@@ -177,6 +180,7 @@ def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bou
         
         E1 = avg_normal_strain + radius  # Maximum principal strain
         E2 = avg_normal_strain - radius  # Minimum principal strain
+        E3 = 1 / ((1 + E1) * (1 + E2)) - 1
         
         # Find maximum and minimum absolute strain values
         max_strain = max(np.max(np.abs(E1)), np.max(np.abs(E2)))
@@ -198,6 +202,7 @@ def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bou
         'E_xy': E_xy,
         'E1': E1,
         'E2': E2,
+        'E3': E3,
         'min_abs_strain': min_strain,
         'max_abs_strain': max_strain
     }
@@ -302,12 +307,12 @@ if __name__ == "__main__":
 
     # Apply strain limiting
     strain_lower_bound = 0.1    # Minimum desired strain
-    strain_upper_bound = 0.4  # Maximum allowable strain
+    strain_upper_bound = 0.25  # Maximum allowable strain
     
     # Apply strain limiting/amplification
     result = limit_strain_range(
         displacement_x, displacement_y, 
-        strain_lower_bound, strain_upper_bound
+        stretch=False, strain_upper_bound= strain_upper_bound
     )
 
     dx_adj, dy_adj, initial_strain, final_strain, max_initial, max_final, min_initial, min_final = result

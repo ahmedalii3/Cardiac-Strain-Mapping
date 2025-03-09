@@ -1,2 +1,2 @@
 
-# final_strain_tensor = {'E1': strain_map}
+    plt.subplots_adjust(hspace=0.5, wspace=0.4)

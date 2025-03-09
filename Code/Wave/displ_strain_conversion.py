@@ -44,8 +44,8 @@ def strain_conversion(frame_displ_x, frame_displ_y):
     ep3_all = 1 / ((1 + ep1_all) * (1 + ep2_all)) - 1
 
     # Ensure ep1_all is non-negative
-    ep1_all = np.maximum(ep1_all, 0)
-    ep2_all = np.minimum(ep2_all, 0)
+    # ep1_all = np.maximum(ep1_all, 0)
+    # ep2_all = np.minimum(ep2_all, 0)
 
 
     # Check if strains exceed threshold
