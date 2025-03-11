@@ -57,7 +57,7 @@ class Max_pool(tf.keras.Model):
         return x
 
 class Unet_2Dense(tf.keras.Model):
-    def __init__(self):
+    def __init__(self,trainable = True, dtype=None, **kwargs):
         super(Unet_2Dense, self).__init__()
         self.conv_block1 = Conv_block(64)
         self.pool1 = Max_pool()

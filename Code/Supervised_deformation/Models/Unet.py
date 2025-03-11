@@ -115,15 +115,4 @@ class Unet(tf.keras.Model):
         output = self.output_def(conv9)
         return output
     
-    def get_config(self):
-        config = super().get_config()
-        config.update({
-            "input_shape": self.input_shape,
-        })
-        return config
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)
-
-
+    

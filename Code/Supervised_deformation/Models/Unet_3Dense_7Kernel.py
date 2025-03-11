@@ -16,7 +16,7 @@ from tensorflow.keras.initializers import HeUniform
 from tensorflow.keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, Concatenate, Add, Multiply, BatchNormalization, Activation
 from tensorflow.keras.models import Model
 class Conv_block(tf.keras.Model):
-    def __init__(self,num_filters, kernel_size):
+    def __init__(self,num_filters, kernel_size=3):
         super(Conv_block, self).__init__()
         self.conv1 = Conv2D(num_filters, kernel_size, padding = 'same', kernel_initializer = 'he_normal')
         self.bn1 = BatchNormalization()
@@ -57,11 +57,11 @@ class Max_pool(tf.keras.Model):
         return x
 
 class Unet_3Dense_7Kernel(tf.keras.Model):
-    def __init__(self):
+    def __init__(self,trainable = True, dtype=None, **kwargs):
         super(Unet_3Dense_7Kernel, self).__init__()
         self.conv_block1 = Conv_block(64,7)
         self.pool1 = Max_pool()
-        self.conv_block2 = Conv_block(128.5)
+        self.conv_block2 = Conv_block(128,5)
         self.pool2 = Max_pool()
         self.conv_block3 = Conv_block(256,3)
         self.pool3 = Max_pool()
