@@ -159,6 +159,10 @@ class Residual_Unet(tf.keras.Model):
 
 
         return output_def
+    
+    def get_config(self):
+        config = super().get_config()
+        return config
 
 
 

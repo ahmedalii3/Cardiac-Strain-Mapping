@@ -2,8 +2,9 @@ from tensorflow.keras.losses import Loss
 import tensorflow as tf
 
 class MaskLoss(Loss):
-    def __init__(self):
-        super(MaskLoss, self).__init__()
+    def __init__(self, **kwargs):  # Add kwargs for config compatibility
+        super(MaskLoss, self).__init__(**kwargs)
+
 
     def call(self, y_true, y_pred):
         # Extract the first two channels (actual ground truth)
@@ -27,13 +28,14 @@ class MaskLoss(Loss):
         # weighted_mask = tf.where(mask == 1, final_ratio, 1.0)  # Shape: [batch_size, height, width]
 
         # Expand dimensions to match squared_error shape
-        weighted_mask = tf.expand_dims(weighted_mask, axis=-1)  # Shape: [batch_size, height, width, 1]
+        weighted_mask = tf.expand_dims(mask, axis=-1)  # Shape: [batch_size, height, width, 1]
 
         # Apply weighted loss
         weighted_error = weighted_mask * squared_error
 
         mask_sum = tf.reduce_sum(weighted_mask)
-        num_of_pixels = 128 * 128
+        num_of_pixels = tf.cast(128 * 128, tf.float32)
+        
         mask_ratio = num_of_pixels / (mask_sum + 1e-6)
 
         weighted_error = weighted_error * mask_ratio
@@ -42,9 +44,19 @@ class MaskLoss(Loss):
 
         return mean_error
     
+    def get_config(self):  # 🚀 Add this to fix the TypeError!
+        base_config = super(MaskLoss, self).get_config()
+        return base_config
+
+    
 class MAELoss(Loss):
-    def __init__(self):
-        super(MAELoss, self).__init__()
+    def __init__(self, **kwargs):
+        super(MAELoss, self).__init__(**kwargs)
+
 
     def call(self, y_true, y_pred):
         return tf.reduce_mean(tf.abs(y_true[..., :2]  - y_pred))
+    
+    def get_config(self):  
+        base_config = super(MAELoss, self).get_config()
+        return base_config

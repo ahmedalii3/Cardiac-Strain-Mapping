@@ -63,7 +63,7 @@ class segment ():
             id = slice.split("_")[-1]
             if id == "1.npy" :
                 continue
-            elif id == "2.npy":
+            elif id == "2.npy" or id == "slice3.npy":
                 image = np.load(self.dataset_path + "/" + slice, allow_pickle=True)
                 affine = np.eye(4)
                 nifti_image = nib.Nifti1Image(image, affine)
@@ -93,7 +93,7 @@ class segment ():
 
 # try segment class
 if __name__ == "__main__":
-    segment = segment("/Users/ahmed_ali/Downloads/niftitial")
+    segment = segment("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/real_test_data")
     # segment.load_dataset()
     # segment.install_nnUnet()
     # segment.set_global_variables()

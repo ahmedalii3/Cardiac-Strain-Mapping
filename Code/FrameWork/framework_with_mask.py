@@ -45,8 +45,9 @@ from ResidualUnet_3Dense_5Kernels import Residual_Unet_3D_5K
 
 
 class Automate_Training():
-    def __init__(self, dataset_path, models_list, save_dir, saved_model_dir):
+    def __init__(self, dataset_path, real_test_data_path, models_list, save_dir, saved_model_dir):
         self.dataset_path = dataset_path
+        self.real_test_data_path = real_test_data_path
         self.models_list = models_list
         self.save_dir = save_dir
         self.saved_model_dir = saved_model_dir
@@ -204,24 +205,22 @@ class Automate_Training():
         length_dataset = len(fixed_image_array) 
         train_index = int(length_dataset * 0.90)
         valid_index = int(length_dataset * 0.95)
- 
+
+        train_index = 5
+        valid_index = 7
         self.fixed_images_train = fixed_image_array[:train_index]
         self.fixed_images_valid = fixed_image_array[train_index:valid_index]
-        self.fixed_images_test = fixed_image_array[valid_index:]
+        self.fixed_images_test = fixed_image_array[valid_index:10]
         self.moving_images_train = moving_image_array[:train_index]
         self.moving_images_valid = moving_image_array[train_index:valid_index]
-        self.moving_images_test = moving_image_array[valid_index:]
+        self.moving_images_test = moving_image_array[valid_index:10]
 
         self.y_train = displacement_array[:train_index]
         self.y_valid = displacement_array[train_index:valid_index]
-        self.y_test = displacement_array[valid_index:]
+        self.y_test = displacement_array[valid_index:10]
 
-        plt.imshow(self.fixed_images_train[0])
-        plt.imshow(self.moving_images_train[0])
-        plt.imshow(self.y_train[0, :, :, 0])
-        plt.imshow(self.y_train[0, :, :, 1])
-        plt.imshow(self.y_train[0, :, :, 2])
-        plt.show()
+     
+    
         
         
 
@@ -240,6 +239,56 @@ class Automate_Training():
         # Warp the image using remap for both x and y displacements
         displaced_image = cv2.remap(image, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
         return displaced_image
+    def calculate_strain(self, x_displacement, y_displacement):
+                # Example initialization (replace with real data)
+        deltaX = 1  # Spatial resolution in X
+        deltaY = 1  # Spatial resolution in Y
+        deltaT = 1  # Time step
+        StrainEpPeak = 0.2  # Strain limit
+        CineNoFrames = 2  # Number of frames
+
+        # Simulated displacement field (random example, replace with actual data)
+        FrameDisplX = x_displacement
+        FrameDisplY =  y_displacement
+        OverStrain = True
+
+        while OverStrain:
+            UX = FrameDisplX.copy()
+            UY = FrameDisplY.copy()
+
+            # Compute displacement gradients
+            UXx, UXy= np.gradient(UX, deltaX, deltaY, axis=(0, 1))
+            UYx, UYy = np.gradient(UY, deltaX, deltaY, axis=(0, 1))
+
+            # Compute Eulerian Strain Tensor
+            ExxAll = (2 * UXx - (UXx**2 + UYx**2)) / 2
+            ExyAll = (UXy + UYx - (UXx * UXy + UYx * UYy)) / 2
+            EyxAll = ExyAll  # Symmetric tensor
+            EyyAll = (2 * UYy - (UXy**2 + UYy**2)) / 2
+
+            # Compute principal strains (eigenvalues of the strain tensor)
+            ThetaEp = 0.5 * np.arctan2(2 * ExyAll, ExxAll - EyyAll)
+            Ep1All = (ExxAll + EyyAll) / 2 + np.sqrt(((ExxAll - EyyAll) / 2) ** 2 + ExyAll**2)
+            Ep2All = (ExxAll + EyyAll) / 2 - np.sqrt(((ExxAll - EyyAll) / 2) ** 2 + ExyAll**2)
+
+            # Through-plane principal strain using incompressibility assumption
+            Ep3All = 1.0 / ((1 + Ep1All) * (1 + Ep2All)) - 1
+            print(Ep3All.shape)
+            # Adjust displacement if strain exceeds threshold
+            OverStrain = False
+            for iframe in range(CineNoFrames):
+                max_ep = max(
+                    np.max(np.abs(Ep1All[:, :])),
+                    np.max(np.abs(Ep2All[:, :])),
+                    np.max(np.abs(Ep3All[:, :]))
+                )
+                
+                if max_ep > StrainEpPeak:
+                    FrameDisplX[:, :] *= max(0.95, StrainEpPeak / max_ep)
+                    FrameDisplY[:, :] *= max(0.95, StrainEpPeak / max_ep)
+                    OverStrain = True
+
+        return Ep1All, Ep2All, Ep3All
 
     def visualise_outputs(self, model_name, history, model):
         #Create folder for the model
@@ -248,6 +297,9 @@ class Automate_Training():
         os.makedirs(model_folder, exist_ok=True)
         self.all_losses.append(history.history['loss'])
         self.all_val_losses.append(history.history['val_loss'])
+
+        np.save(os.path.join(self.save_dir, "all_losses.npy"), self.all_losses)
+        np.save(os.path.join(self.save_dir, "all_val_losses.npy"), self.all_val_losses)
         
         # Plot the training and validation loss
         plt.plot(history.history['loss'], label='Training Loss')
@@ -275,44 +327,82 @@ class Automate_Training():
             f.write(f"Test Loss: {test_loss:.4f}\n")
             f.write(f"Test MAE: {test_mae:.4f}\n")
         
-        ############# plot the direction train  ############
-        moving_image_try_train = self.moving_images_train[95]
-        fixed_image_try_train = self.fixed_images_train[95]
-        moving_image_try_train = tf.expand_dims(moving_image_try_train, axis=0)
-        fixed_image_try_train = tf.expand_dims(fixed_image_try_train, axis=0)
-        predicted_deformation_field = model.predict([moving_image_try_train, fixed_image_try_train])
-        x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
-        y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
-        x_displacement = self.y_train[95, :, :, 0]
-        y_displacement = self.y_train[95, :, :, 1]
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-        for i in range(0, 128, 10):  # Adjust the step for better visualization
-            for j in range(0, 128, 10):
-                ax[0].arrow(j, i, x_displacement[i, j], y_displacement[i, j], head_width=0.5, head_length=0.7, fc='b', ec='b')
+        #############plot direction real test ############
+        files_real_test = os.listdir(self.real_test_data_path)
+        for file in files_real_test:
+            if file == "patient_053_frame_0_slice3.npy":
+                moving_image = np.load(os.path.join(self.real_test_data_path, file))
+            elif file == "patient_053_frame_4_slice3.npy":
+                fixed_image = np.load(os.path.join(self.real_test_data_path, file))
+            elif file == "patient_053_frame_4_slice3_mask.npy":
+                mask_image = np.load(os.path.join(self.real_test_data_path, file))
 
-        for i in range(0, 128, 10):  # Adjust the step for better visualization
+
+        moving_image = cv2.normalize(moving_image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        fixed_image = cv2.normalize(fixed_image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        print(moving_image.shape)
+        print(fixed_image.shape)
+        moving_image_expanded = tf.expand_dims(moving_image, axis=0)
+        fixed_image_expanded = tf.expand_dims(fixed_image, axis=0)
+        print(moving_image_expanded.shape)
+        print(fixed_image_expanded.shape)
+        predicted_deformation_field = model.predict([moving_image_expanded, fixed_image_expanded])
+        x_displacement_predicted = predicted_deformation_field[0, :, :, 0]  
+        y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
+        for i in range(0, 128, 10):
             for j in range(0, 128, 10):
-                ax[1].arrow(j, i, x_displacement_predicted[i, j], y_displacement_predicted[i, j], head_width=0.5, head_length=0.7, fc='b', ec='b')
-        ax[0].set_title('Actual Displacement')
-        ax[1].set_title('Predicted Displacement')
-        direction_plot_path = os.path.join(model_folder, f"direction_plot_train{model_name}.png")
+                plt.arrow(j, i, x_displacement_predicted[i, j], y_displacement_predicted[i, j], head_width=0.5, head_length=0.7, fc='b', ec='b')
+        plt.title('Predicted Displacement')
+        direction_plot_path = os.path.join(model_folder, f"direction_plot_real_test{model_name}.png")
         plt.savefig(direction_plot_path)
         plt.close()
+        ############# plot strain over the real data ############
+        Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
+        fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+        ax[0].imshow(moving_image, cmap='gray')  
+        ax[0].set_title('Moving Image')
 
-            ######### plot the moving and fixed and warped images train ########
-        fixed_image_try = self.fixed_images_train[95]
-        moving_image_try = self.moving_images_train[95]
+        ax[1].imshow(fixed_image, cmap='gray')
+        ax[1].set_title('Fixed Image')
+
+        ax[2].imshow(fixed_image, cmap='gray')
+        im1 = ax[2].imshow(Ep1All, cmap='coolwarm', alpha=0.5)
+        
+        divider1 = make_axes_locatable(ax[2])
+        cax1 = divider1.append_axes("right", size="5%", pad=0.1)
+        fig.colorbar(im1, cax=cax1, shrink=0.8)
+        ax[2].set_title('Ep1All')
+
+        ax[3].imshow(fixed_image, cmap='gray')
+        im2 = ax[3].imshow(Ep2All, cmap='coolwarm', alpha=0.5)
+        
+        divider2 = make_axes_locatable(ax[3])
+        cax2 = divider2.append_axes("right", size="5%", pad=0.1)
+        fig.colorbar(im2, cax=cax2, shrink=0.8)
+        ax[3].set_title('Ep2All')
+
+        for i in range (4):
+            ax[i].axis('off')
+        strain_plot_path = os.path.join(model_folder, f"strain_plot_real_test{model_name}.png")
+        plt.savefig(strain_plot_path)
+        plt.close()
+
+        ############ plot moving and fixed and warped images real test ########
+
+        fixed_image_try = fixed_image
+        moving_image_try = moving_image
         original_map = fixed_image_try - moving_image_try
-        # abso;ute value of the original map
+        # absolute value of the original map
         original_map = np.abs(original_map)
         
         moving_image_try = tf.expand_dims(moving_image_try, axis=-1)
         print(moving_image_try.shape)
         warped_image = self.apply_displacement(moving_image_try, x_displacement_predicted, y_displacement_predicted)
-        
         difference_image = fixed_image_try - warped_image
         #absolute value of the difference image
         difference_image = np.abs(difference_image)
+
+        vmin, vmax = np.min(original_map), np.max(original_map)
         
         fig, ax = plt.subplots(1, 5, figsize=(18, 5))  # Increase figure width
 
@@ -324,23 +414,27 @@ class Automate_Training():
 
         ax[2].imshow(warped_image)
         ax[2].set_title('Warped Image')
-
         # Use the same color range for both difference images
-        if self.original_flag:
-            self.original_flag = False
-            vmin, vmax = original_map.min(), original_map.max()
-
+        
         # Original Difference with colorbar
         im1 = ax[3].imshow(original_map, cmap='hot', vmin=vmin, vmax=vmax)
+        
         divider1 = make_axes_locatable(ax[3])
         cax1 = divider1.append_axes("right", size="5%", pad=0.1)
         fig.colorbar(im1, cax=cax1, shrink=0.8)
         ax[3].set_title('Original Difference')
 
+
+
         
 
         # Difference Image with the same colorbar scale
-        im2 = ax[4].imshow(difference_image, cmap='hot', vmin=vmin, vmax=vmax)
+        
+        im2 =  ax[4].imshow(difference_image, cmap='hot', vmin=vmin, vmax=vmax)
+        # ax[4].imshow(fixed_image_try, cmap='gray')
+        masked_overlay = np.ma.masked_where(mask_image != 1, mask_image)
+        ax[4].imshow(masked_overlay, cmap='grey', alpha=0.5)
+        
         divider2 = make_axes_locatable(ax[4])
         cax2 = divider2.append_axes("right", size="5%", pad=0.1)
         fig.colorbar(im2, cax=cax2, shrink=0.8)
@@ -350,25 +444,10 @@ class Automate_Training():
             ax[i].axis('off')
         # Adjust spacing between subplots
         fig.subplots_adjust(wspace=0.4)
-        warped_image_path = os.path.join(model_folder, f"warped_image_train{model_name}.png")
+
+        warped_image_path = os.path.join(model_folder, f"warped_image_real_test{model_name}.png")
         plt.savefig(warped_image_path)
         plt.close()
-
-
-        ####### plot x deformation field ########
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-
-        # Use ax[0] and ax[1] to access the individual axes
-        ax[0].imshow(x_displacement)
-        ax[0].set_title('x_displacement')
-
-        ax[1].imshow(x_displacement_predicted)
-        ax[1].set_title('x_displacement_predicted')
-
-        x_displacement_path = os.path.join(model_folder, f"x_displacement{model_name}.png")
-        plt.savefig(x_displacement_path)
-        plt.close()
-
         ############# plot the direction test  ############
         moving_image_try = self.moving_images_test[0]
         fixed_image_try = self.fixed_images_test[0]
@@ -379,7 +458,9 @@ class Automate_Training():
         y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
         x_displacement = self.y_test[0, :, :, 0]
         y_displacement = self.y_test[0, :, :, 1]
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        difference_x = x_displacement - x_displacement_predicted
+        difference_y = y_displacement - y_displacement_predicted
+        fig, ax = plt.subplots(1, 3, figsize=(10, 5))
         for i in range(0, 128, 10):  # Adjust the step for better visualization
             for j in range(0, 128, 10):
                 ax[0].arrow(j, i, x_displacement[i, j], y_displacement[i, j], head_width=0.5, head_length=0.7, fc='b', ec='b')
@@ -387,13 +468,31 @@ class Automate_Training():
         for i in range(0, 128, 10):  # Adjust the step for better visualization
             for j in range(0, 128, 10):
                 ax[1].arrow(j, i, x_displacement_predicted[i, j], y_displacement_predicted[i, j], head_width=0.5, head_length=0.7, fc='b', ec='b')
+
+        for i in range(0, 128, 10):  # Adjust the step for better visualization
+            for j in range(0, 128, 10):
+                ax[2].arrow(j, i, difference_x[i, j], difference_y[i, j], head_width=0.5, head_length=0.7, fc='b', ec='b')
         ax[0].set_title('Actual Displacement')
         ax[1].set_title('Predicted Displacement')
+        ax[2].set_title('Difference')
         direction_plot_path = os.path.join(model_folder, f"direction_plot_test{model_name}.png")
         plt.savefig(direction_plot_path)
         plt.close()
-
         
+        ############### plot magnitude of the displacement test ########
+        magnitude_actual = np.sqrt(x_displacement ** 2 + y_displacement ** 2)
+        magnitude_predicted = np.sqrt(x_displacement_predicted ** 2 + y_displacement_predicted ** 2)
+        magnitude_difference = np.sqrt(difference_x ** 2 + difference_y ** 2)
+        fig, ax = plt.subplots(1, 3, figsize=(10, 5))
+        ax[0].imshow(magnitude_actual, cmap='hot')
+        ax[0].set_title('Actual Magnitude')
+        ax[1].imshow(magnitude_predicted, cmap='hot')
+        ax[1].set_title('Predicted Magnitude')
+        ax[2].imshow(magnitude_difference, cmap='hot')
+        ax[2].set_title('Difference')
+        magnitude_plot_path = os.path.join(model_folder, f"magnitude_plot_test{model_name}.png")
+        plt.savefig(magnitude_plot_path)
+        plt.close()
 
 
         ######### plot the moving and fixed and warped images test ########
@@ -410,7 +509,7 @@ class Automate_Training():
         #absolute value of the difference image
         difference_image = np.abs(difference_image)
 
-        
+        vmin, vmax = np.min(original_map), np.max(original_map)
         
         fig, ax = plt.subplots(1, 5, figsize=(18, 5))  # Increase figure width
 
@@ -434,7 +533,18 @@ class Automate_Training():
         
 
         # Difference Image with the same colorbar scale
+        
         im2 = ax[4].imshow(difference_image, cmap='hot', vmin=vmin, vmax=vmax)
+        # mask is the y test where values are 2
+        mask = self.y_test[0, :, :, 2]
+        masked_overlay = np.ma.masked_where(mask < 2, mask)
+
+
+        
+        # Overlay the mask on top of the difference image
+        ax[4].imshow(masked_overlay, cmap='jet', alpha=0.5, interpolation='none')
+
+        # overlay almask with alpha = 0.5
         divider2 = make_axes_locatable(ax[4])
         cax2 = divider2.append_axes("right", size="5%", pad=0.1)
         fig.colorbar(im2, cax=cax2, shrink=0.8)
@@ -447,6 +557,8 @@ class Automate_Training():
         warped_image_path = os.path.join(model_folder, f"warped_image_test{model_name}.png")
         plt.savefig(warped_image_path)
         plt.close()
+
+
     def train_models(self, num_epochs = 10, batch_size = 32):
        
         for model in self.models_list:
@@ -460,7 +572,7 @@ class Automate_Training():
             out_def = modelnet([moving_input, fixed_input])
             model = Model(inputs=[moving_input, fixed_input], outputs=out_def)
 
-            model.compile(optimizer=optimizer, loss=MaskLoss, metrics=[MAELoss])
+            model.compile(optimizer=optimizer, loss=MaskLoss(), metrics=[MAELoss()])
 
             file_name = f"{model_name}.keras"  
             check_point_path = os.path.join(self.saved_model_dir, file_name)
@@ -547,13 +659,15 @@ if __name__ == '__main__':
     # print("Num GPUs Available: ", len(physical_devices))
 
     dataset_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/simulated_data_4000_loc"
+    real_test_data_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/real_test_data"
     current_script = Path(__file__)
     models_list = [ Residual_Unet(),Unet(), Unet_7Kernel(), Unet_5Kernel(), Unet_3Dense(), Unet_1Dense(), Unet_2Dense(), Unet_1Dense_7Kernel(), Unet_1Dense_5Kernel(), Unet_2Dense_7Kernel(), Unet_2Dense_5Kernel(), Unet_3Dense_7Kernel(), Unet_3Dense_5Kernel(), Residual_Unet_1D(), Residual_Unet_2D(), Residual_Unet_3D(), Residual_Unet_1D_7K(), Residual_Unet_1D_5K(), Residual_Unet_2D_7K(), Residual_Unet_2D_5K(), Residual_Unet_3D_7K(), Residual_Unet_3D_5K()]
+    models_list=[Unet()]
     save_dir = current_script.parent / "Saved"
     saved_model_dir = current_script.parent / "Models"
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(saved_model_dir, exist_ok=True)
-    trainer = Automate_Training(dataset_path, models_list, save_dir, saved_model_dir)
+    trainer = Automate_Training(dataset_path,real_test_data_path, models_list, save_dir, saved_model_dir)
     trainer.train_models(num_epochs = 2, batch_size = 32)
 
     
