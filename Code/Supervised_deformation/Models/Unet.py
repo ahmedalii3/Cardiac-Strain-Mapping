@@ -16,6 +16,7 @@ from tensorflow.keras.initializers import HeUniform
 from tensorflow.keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, Concatenate, Add, Multiply, BatchNormalization, Activation
 from tensorflow.keras.models import Model
 
+
 class Conv_block(tf.keras.Model):
     def __init__(self,num_filters):
         super(Conv_block, self).__init__()
@@ -34,6 +35,11 @@ class Conv_block(tf.keras.Model):
         x = self.bn2(x)
         x = self.act2(x)
         return x
+    
+    def get_config(self):
+        config = super().get_config()
+        config.update({'num_filters': self.num_filters})
+        return config
 
 class UpConv_block(tf.keras.Model):
     def __init__(self, num_filters):
@@ -48,6 +54,10 @@ class UpConv_block(tf.keras.Model):
         x = self.act(x)
         return x
 
+    def get_config(self):
+        config = super().get_config()
+        config.update({'num_filters': self.num_filters})
+        return config
 class Max_pool(tf.keras.Model):
     def __init__(self):
         super(Max_pool, self).__init__()
@@ -56,6 +66,11 @@ class Max_pool(tf.keras.Model):
     def call(self, inputs):
         x = self.pool(inputs)
         return x
+    
+    def get_config(self):
+        config = super().get_config()
+        return config
+
 
 class Unet(tf.keras.Model):
     def __init__(self, trainable = True, dtype=None, **kwargs):
@@ -114,5 +129,9 @@ class Unet(tf.keras.Model):
 
         output = self.output_def(conv9)
         return output
+    
+    def get_config(self):
+        config = super().get_config()
+        return config
     
     
