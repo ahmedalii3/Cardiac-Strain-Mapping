@@ -31,6 +31,13 @@ class MaskLoss(Loss):
 
         # Apply weighted loss
         weighted_error = weighted_mask * squared_error
+
+        mask_sum = tf.reduce_sum(weighted_mask)
+        num_of_pixels = 128 * 128
+        mask_ratio = num_of_pixels / (mask_sum + 1e-6)
+
+        weighted_error = weighted_error * mask_ratio
+
         mean_error = tf.reduce_mean(weighted_error)
 
         return mean_error
