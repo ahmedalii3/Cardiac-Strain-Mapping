@@ -1,0 +1,12 @@
+{
+    "channel_names": { 
+       "0": "T1"
+     }, 
+    "labels": {
+        "background": 0,
+        "MYO": 1,
+        "LV": 2
+      },
+    "numTraining": 1802, 
+    "file_ending": ".nii.gz"
+    }

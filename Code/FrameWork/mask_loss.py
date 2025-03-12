@@ -24,7 +24,7 @@ class MaskLoss(Loss):
         squared_error = tf.square(y_true_deformed - y_pred)  # Shape: [batch_size, height, width, 2]
 
         # Assign higher weight to masked region
-        weighted_mask = tf.where(mask == 1, final_ratio, 1.0)  # Shape: [batch_size, height, width]
+        # weighted_mask = tf.where(mask == 1, final_ratio, 1.0)  # Shape: [batch_size, height, width]
 
         # Expand dimensions to match squared_error shape
         weighted_mask = tf.expand_dims(weighted_mask, axis=-1)  # Shape: [batch_size, height, width, 1]
