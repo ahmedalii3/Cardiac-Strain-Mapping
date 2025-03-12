@@ -1,1 +1,8 @@
 Code/ventricular_short_axis_3label/docs
+Code/Segment/nnUNetFrame
+Code/Segment/nnUNetFrame/dataset/nnUNet_preprocessed/Dataset007_ShortAX
+Code/Segment/nnUNetFrame/dataset/nnUNet_raw/Dataset007_ShortAX/imagesTr
+Code/Segment/nnUNetFrame/dataset/nnUNet_raw/Dataset007_ShortAX/imagesTs
+Code/Segment/nnUNetFrame/dataset/nnUNet_raw/Dataset007_ShortAX/labelsTr
+Code/Segment/nnUNetFrame/dataset/nnUNet_raw/Dataset007_ShortAX/pred_nnUNet
+Code/Segment/nnUNetFrame/nnUNet
