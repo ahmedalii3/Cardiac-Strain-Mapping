@@ -11,7 +11,7 @@ class Wave_Generator():
             'meshsize': 512,
             'patchsize': 50,
             'windSpeed': 50,
-            'winddir': 90,
+            'winddir': 45,
             'rng': 13,
             'A': 1e-7,
             'g': 9.81,

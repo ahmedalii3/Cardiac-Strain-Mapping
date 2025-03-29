@@ -246,17 +246,18 @@ def plot_strain_results(initial_strain_tensor, final_strain_tensor, min_initial_
     # Create a common color scale for comparison
     vmin = min(np.min(initial_strain_map), np.min(final_strain_map))
     vmax = max(np.max(initial_strain_map), np.max(final_strain_map))
-    
+    # Define custom colormap with zero as green
+
     # Plot initial strain map
     im1 = axes[0, 0].imshow(initial_strain_map, vmin=vmin, vmax=vmax, cmap='viridis')
-    axes[0, 0].set_title(f'Initial Strain (Range: {min_initial_strain:.4f} to {max_initial_strain:.4f})', 
-                         pad=20, fontsize=12)
+    # axes[0, 0].set_title(f'Initial Strain (Range: {min_initial_strain:.4f} to {max_initial_strain:.4f})', 
+    #                      pad=20, fontsize=12)
     plt.colorbar(im1, ax=axes[0, 0], pad=0.1)
     
     # Plot final strain map
     im2 = axes[0, 1].imshow(final_strain_map, vmin=vmin, vmax=vmax, cmap='viridis')
-    axes[0, 1].set_title(f'Final Strain (Range: {min_final_strain:.4f} to {max_final_strain:.4f})', 
-                         pad=20, fontsize=12)
+    # axes[0, 1].set_title(f'Final Strain (Range: {min_final_strain:.4f} to {max_final_strain:.4f})', 
+    #                      pad=20, fontsize=12)
     plt.colorbar(im2, ax=axes[0, 1], pad=0.1)
     
     # Plot initial histogram

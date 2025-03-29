@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cm
 from scipy.ndimage import gaussian_filter1d
+from scipy.ndimage import gaussian_filter
 import cv2
 from PIL import Image as im 
 import time
@@ -13,12 +14,13 @@ import matplotlib.colors as mcolors
 
 from wave_genrator import Wave_Generator
 from strain_validation import limit_strain_range, plot_strain_results
+from polar_cartesian_conversion import polar_cartesian_conversion
 
 logging.getLogger().setLevel(logging.INFO)  # Allow printing info level logs
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
 
-DISPLACMENET_MULTIPLAYER = 5e7
-GAUSSIAN_SIGMA = 50
+DISPLACMENET_MULTIPLAYER = 1e7
+GAUSSIAN_SIGMA = 15
 
 def save_if_not_exists(file_paths):
     """Check if any of the files exist"""
@@ -46,6 +48,13 @@ class Wave_Displacer:
         self.frame_count = 0
         self.finished = False
         self.plot_strain = False
+
+        self.strain_maps = []
+
+    def save_stack(self):
+        output_dir = "strain maps"
+        os.makedirs(output_dir, exist_ok=True)
+        np.savez_compressed("strain maps/strain_maps.npz", *self.strain_maps)
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
         height, width, _ = image.shape
@@ -80,17 +89,24 @@ class Wave_Displacer:
         x = np.linspace(self.param['xLim'][0], self.param['xLim'][1], self.param['meshsize'])
         y = np.linspace(self.param['yLim'][0], self.param['yLim'][1], self.param['meshsize'])
         X, Y = np.meshgrid(x, y)
-
+        center = np.load('center_of_mass.npy')
         # Plot the initial data
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
-        Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0) 
+        Z = gaussian_filter(Z, sigma=GAUSSIAN_SIGMA) 
 
         # self.masks = np.load('displaced_images/displaced_images.npz')
         self.masks = np.load('dilated_masks/dilated_masks.npz')
         displaced_mask = self.masks['arr_0']
         displaced_mask = displaced_mask[:,:,0]
         displaced_mask = displaced_mask.astype(np.float64)
-        Zx, Zy = np.gradient(Z) * displaced_mask
+        print(f"type of displaced mask: {type(displaced_mask)}")
+
+        Zx, Zy = np.gradient(Z)
+        Zx, Zy = polar_cartesian_conversion(Zx, Zy, center)
+
+        # Zx = Zx * displaced_mask
+        # Zy = Zy * displaced_mask
+
         binarized_image = np.where(image > 128, 1, 0)
         self.displaced_image_stack.append(binarized_image)
         x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)
@@ -137,7 +153,7 @@ class Wave_Displacer:
         def update(frame):
             nonlocal displaced_image, x_displaced_image, y_displaced_image # To ensure displaced_image is updated across frames
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
-            Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
+            Z = gaussian_filter(Z, sigma=GAUSSIAN_SIGMA)
 
             #get the frame in dispalce_images 
             displaced_mask = self.masks[f'arr_{self.frame_count}']
@@ -148,27 +164,29 @@ class Wave_Displacer:
             displaced_mask = displaced_mask.astype(np.float64)
             
             Zx, Zy = np.gradient(Z)
+            Zx, Zy = polar_cartesian_conversion(Zx, Zy, center)
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) *DISPLACMENET_MULTIPLAYER
-            Zx_disp = Zx_disp * displaced_mask
-            Zy_dsip = Zy_dsip * displaced_mask
+            # Zx_disp = Zx_disp * displaced_mask
+            # Zy_dsip = Zy_dsip * displaced_mask
             
             # Limit the strain range
-            result = limit_strain_range(Zx_disp, Zy_dsip, stretch=False, strain_upper_bound=0.4)
+            result = limit_strain_range(Zx_disp, Zy_dsip, stretch=False, strain_upper_bound=0.3)
             Zx_disp, Zy_dsip, initial_strain, final_strain, max_initial, max_final, min_initial, min_final = result
+            self.strain_maps.append(final_strain)
 
             if(self.plot_strain):
                 plot_strain_results(
                     initial_strain, final_strain, 
                     min_initial, max_initial, 
                     min_final, max_final,
-                    strain_lower_bound = 0, strain_upper_bound = 0.1
+                    strain_lower_bound = 0, strain_upper_bound = 0.3
                     )
                 self.plot_strain = False
 
 
-            # Zx_disp = Zx_disp * displaced_mask
-            # Zy_dsip = Zy_dsip * displaced_mask
+            Zx_disp = Zx_disp * displaced_mask
+            Zy_dsip = Zy_dsip * displaced_mask
 
             # Apply the displacements to the previously displaced image (cumulative effect)
             self.frame_1 = displaced_image
@@ -221,6 +239,10 @@ class Wave_Displacer:
                     print(f"Successfully saved files for {base_name}_#{self.frame_count}")
                 else:
                     print(f"Skipped saving: One or more files already exist for {base_name}_#{self.frame_count}")
+            print(f"frame #{self.frame_count}")
+            if self.frame_count > 30:
+                self.save_stack()
+                print("saved")
             return wave_surf, zx_img, zy_img, displaced_image_plot
 
 

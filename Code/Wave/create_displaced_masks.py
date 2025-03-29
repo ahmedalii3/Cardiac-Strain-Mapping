@@ -7,16 +7,19 @@ import matplotlib.cm as cm
 from scipy.ndimage import gaussian_filter1d
 import cv2
 from PIL import Image as im 
+from scipy.ndimage import center_of_mass
 
 from wave_genrator import Wave_Generator
 from strain_validation import limit_strain_range, plot_strain_results
+from polar_cartesian_conversion import polar_cartesian_conversion
+from scipy.ndimage import gaussian_filter
 
 logging.getLogger().setLevel(logging.INFO)  # Allow printing info level logs
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
 
 
 DISPLACMENET_MULTIPLAYER = 5e7
-GAUSSIAN_SIGMA = 50
+GAUSSIAN_SIGMA = 15
 
 class Create_Displacement_Masks:
     def __init__(self, path, save_mode=False):
@@ -32,7 +35,7 @@ class Create_Displacement_Masks:
         self.save_mode = save_mode
         self.finished = False
         self.plot_strain = False
-
+        self.strain_maps = []
     def apply_displacement(self, image, x_displacement, y_displacement):
         # Prepare meshgrid for remap
         height, width, _ = image.shape
@@ -53,6 +56,7 @@ class Create_Displacement_Masks:
         output_dir = "displaced_images_test"
         os.makedirs(output_dir, exist_ok=True)
         np.savez_compressed("displaced_images/displaced_images.npz", *self.displaced_image_stack)
+        np.savez_compressed("strain maps/strain_maps.npz", *self.strain_maps)
         # np.savez_compressed("strain_values.npz", *self.strain_values)
 
     def plot(self):
@@ -78,9 +82,15 @@ class Create_Displacement_Masks:
         X, Y = np.meshgrid(x, y)
 
         # Plot the initial data
+        mask = image
+        center = center_of_mass(mask)
+        np.save("center_of_mass.npy", np.array(center))  # Save as .npy file
+        print(f"Center of mass: {center}")
+
         Z = self.wave.calc_wave(self.H0, self.W, 0, self.Grid_Sign)
-        Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
+        Z = gaussian_filter(Z, sigma=GAUSSIAN_SIGMA)
         Zx, Zy = np.gradient(Z)
+        Zx, Zy = polar_cartesian_conversion(Zx, Zy, center)
 
         binarized_image = np.where(image > 128, 1, 0)
         x_displacement = np.clip(Zx * 50, -20, 20).astype(np.float32)  # Scale by 50 for more visible effect
@@ -111,23 +121,26 @@ class Create_Displacement_Masks:
             if self.frame_count > 30:
                 self.finished = True
             Z = self.wave.calc_wave(self.H0, self.W, frame, self.Grid_Sign)
-            Z = gaussian_filter1d(Z, sigma=GAUSSIAN_SIGMA, axis=0)
+            Z = gaussian_filter(Z, sigma=GAUSSIAN_SIGMA)
             Zx, Zy = np.gradient(Z)
+            Zx, Zy = polar_cartesian_conversion(Zx, Zy, center)
+            
 
             Zx_disp = np.clip(Zx * 50, -20, 20).astype(np.float32) * DISPLACMENET_MULTIPLAYER
             Zy_dsip = np.clip(Zy * 50, -20, 20).astype(np.float32) * DISPLACMENET_MULTIPLAYER
 
             print(f"Max Value in Zx before strain validation: {np.max(Zx_disp)}")
-            result = limit_strain_range(Zx_disp, Zy_dsip, stretch = True, strain_upper_bound=0.4)
+            result = limit_strain_range(Zx_disp, Zy_dsip, stretch = False, strain_upper_bound=0.3)
             Zx_disp, Zy_dsip, initial_strain, final_strain, max_initial, max_final, min_initial, min_final = result
             print(f"Max Value in Zx after strain validation: {np.max(Zx_disp)}")
+            self.strain_maps.append(final_strain)
 
             if(self.plot_strain): 
                 plot_strain_results(
                     initial_strain, final_strain, 
                     min_initial, max_initial, 
                     min_final, max_final,
-                    strain_lower_bound = 0, strain_upper_bound = 0.4
+                    strain_lower_bound = 0, strain_upper_bound = 0.2
                     )
                 self.plot_strain = False
 
@@ -161,7 +174,7 @@ class Create_Displacement_Masks:
 
 
         # Animate the wave and displacements
-        ani = FuncAnimation(fig, update, frames=np.linspace(0, 30, 30), blit=False, repeat=False)
+        ani = FuncAnimation(fig, update, frames=np.linspace(0, 31, 31), blit=False, repeat=False)
         plt.tight_layout()
         #add padding between subplots
         plt.subplots_adjust(wspace=0.5, hspace=0.5)

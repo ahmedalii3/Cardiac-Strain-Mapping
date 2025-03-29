@@ -1,0 +1,58 @@
+import os
+import numpy as np
+import cv2
+from scipy.ndimage import gaussian_filter
+
+def load_image(path,isMask=False):
+        # Load the image array from the .npy file
+        array = np.load(path)
+        if isMask:
+             array = array[1]
+             array = np.where(array > 1, 1, 0)
+        else:
+             array = array[0]
+        
+        # Extract the first image if the array has extra dimensions
+        if len(array.shape) > 3 or (len(array.shape) == 3 and array.shape[0] not in [1, 3]):
+            image_array = array[0]  # Adjust indexing as needed for your specific data
+        else:
+            image_array = array
+
+        # Ensure the array is in uint8 format (0-255 range) for proper visualization
+        if image_array.dtype != np.uint8:
+            image_array = cv2.normalize(image_array, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+        # Handle grayscale or RGB format
+        if len(image_array.shape) == 2:  # Grayscale
+            image = cv2.cvtColor(image_array, cv2.COLOR_GRAY2RGB)  # Convert to RGB for consistency
+        elif len(image_array.shape) == 3 and image_array.shape[2] in [3, 4]:  # RGB or RGBA
+            image = image_array[:, :, :3]  # Discard alpha if present
+        else:
+            raise ValueError("Unexpected image shape, unable to load the image properly.")
+
+        return image
+
+def dilate_mask(mask):
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    value = 0.9
+    dilated_mask = mask
+    process_mask = mask
+    for i in range(10):            
+        old_process_mask = process_mask
+        process_mask = cv2.dilate(process_mask, kernel)
+
+        # Identify the newly added pixels
+        added_region = (process_mask - old_process_mask).astype(np.float64)
+
+        # Update the dilated image
+        dilated_mask = dilated_mask + added_region * value
+        value -= 0.1
+    dilated_mask = gaussian_filter(dilated_mask, sigma=2)
+    return dilated_mask
+
+def save_if_not_exists(file_paths):
+    """Check if any of the files exist"""
+    for path in file_paths:
+        if os.path.exists(path + '.npy'):
+            return False
+    return True
