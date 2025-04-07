@@ -828,27 +828,27 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output
     """
 
     num_frames = FrameDisplX.shape[2]  # Number of frames in the animation
-    height, width, _ = MaskHT0.shape  # Image dimensions
+    height, width, _ = Image.shape  # Image dimensions
 
     # Create a meshgrid for remapping
     x, y = np.meshgrid(np.arange(width), np.arange(height))
-
     # Set up the figure for animation
     fig, ax = plt.subplots(figsize=(6, 6))
     im = ax.imshow(Image, cmap="gray", animated=True)
     ax.set_title("Deformed MRI Image Over Time")
     ax.axis("off")
     MaskHT0_deformed = MaskHT0
-    Image_deformed = Image
     # Update function for animation
     def update(frame):
-        nonlocal FrameDisplX , FrameDisplY, MaskHT0, MaskHT0_deformed, Image_deformed, patinet_file_name
+        nonlocal MaskHT0, MaskHT0_deformed, patinet_file_name
+        Image_deformed = Image
+
         # Compute displacement (negate to match MATLAB)
         T3DDispX = -FrameDisplX[:, :, frame].astype(np.float64)
         T3DDispY = -FrameDisplY[:, :, frame].astype(np.float64)
-
-        MaskHT0_deformed = MaskHT0_deformed[...,0].astype(np.float64)/255
+        MaskHT0_deformed = MaskHT0_deformed[..., 0].astype(np.float64) / 255
         dilated_MaskHT0 = dilate_mask(MaskHT0_deformed)
+        
         T3DDispX_masked = T3DDispX * dilated_MaskHT0
         T3DDispY_masked = T3DDispY * dilated_MaskHT0
         
@@ -864,8 +864,10 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output
         y_new = (y + T3DDispY).astype(np.float32)
 
         # Apply remap to warp the image
-        Image_deformed = cv2.remap(Image, x_new_masked, y_new_masked, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
+        Image_deformed = cv2.remap(Image_deformed, x_new_masked, y_new_masked, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
         MaskHT0_deformed = cv2.remap(MaskHT0, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)        
+        # Image_deformed = apply_displacement(Image, T3DDispX_masked, T3DDispY_masked)
+        # MaskHT0_deformed = apply_displacement(MaskHT0, T3DDispX, T3DDispY)
         
         frame2 = Image_deformed
 
