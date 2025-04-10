@@ -17,7 +17,7 @@ import cv2
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import sys
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-sys.path.append(os.path.abspath("Code/Supervised_deformation/Models"))
+sys.path.append(os.path.abspath("Models_Arch"))
 from mask_loss import MaskLoss
 from mask_loss import MAELoss
 # print(str(Path(__file__).parent))
@@ -133,9 +133,9 @@ class Automate_Training():
     def load_data(self):
         folders_in_train_simulator_directory = os.listdir(self.dataset_path)
         for i, directory in enumerate(folders_in_train_simulator_directory):
-            if directory == "Displacement_loc":
+            if directory == "Displacement":
                 Displacement_directory = os.path.join(self.dataset_path, directory)
-            elif directory == "Frames_loc":
+            elif directory == "Frames":
                 Frames_directory = os.path.join(self.dataset_path, directory)
             elif directory == "Masks":
                 Masks_directory = os.path.join(self.dataset_path, directory)
@@ -166,7 +166,9 @@ class Automate_Training():
 
         for file in files_in_Frames_directory:
             file_path = os.path.join(Frames_directory, file)
-            image = np.load(file_path)
+            if file_path.endswith(".DS_Store"):
+                continue
+            image = np.load(file_path, allow_pickle=True)
             #convert image to float
             image = image.astype(np.float32)
             #normalize image
@@ -186,7 +188,7 @@ class Automate_Training():
         y_displacement_dict = {}
         for file in files_in_Displacement_directory:
             file_path = os.path.join(Displacement_directory , file)
-            image = np.load(file_path)
+            image = np.load(file_path, allow_pickle=True)
 
             
             frame_id = file.split('_')[-1].split('.')[0]
@@ -238,17 +240,17 @@ class Automate_Training():
         # plt.colorbar()
         # plt.show()
         # save directory 
-        save_dir = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/Loaded_data"
-        np.save(os.path.join(save_dir, "fixed_images_train.npy"), self.fixed_images_train)
-        np.save(os.path.join(save_dir, "fixed_images_valid.npy"), self.fixed_images_valid)
-        np.save(os.path.join(save_dir, "fixed_images_test.npy"), self.fixed_images_test)
-        np.save(os.path.join(save_dir, "moving_images_train.npy"), self.moving_images_train)
+        # save_dir = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/Loaded_data"
+        # np.save(os.path.join(save_dir, "fixed_images_train.npy"), self.fixed_images_train)
+        # np.save(os.path.join(save_dir, "fixed_images_valid.npy"), self.fixed_images_valid)
+        # np.save(os.path.join(save_dir, "fixed_images_test.npy"), self.fixed_images_test)
+        # np.save(os.path.join(save_dir, "moving_images_train.npy"), self.moving_images_train)
 
-        np.save(os.path.join(save_dir, "moving_images_valid.npy"), self.moving_images_valid)
-        np.save(os.path.join(save_dir, "moving_images_test.npy"), self.moving_images_test)
-        np.save(os.path.join(save_dir, "y_train.npy"), self.y_train)
-        np.save(os.path.join(save_dir, "y_valid.npy"), self.y_valid)
-        np.save(os.path.join(save_dir, "y_test.npy"), self.y_test)
+        # np.save(os.path.join(save_dir, "moving_images_valid.npy"), self.moving_images_valid)
+        # np.save(os.path.join(save_dir, "moving_images_test.npy"), self.moving_images_test)
+        # np.save(os.path.join(save_dir, "y_train.npy"), self.y_train)
+        # np.save(os.path.join(save_dir, "y_valid.npy"), self.y_valid)
+        # np.save(os.path.join(save_dir, "y_test.npy"), self.y_test)
 
 
      
@@ -711,6 +713,7 @@ class Automate_Training():
         #Create folder for the model
         #mkdir
         data = {}
+        model_name = model_name + "_with_mask"
         model_folder = os.path.join(self.save_dir, model_name)
         os.makedirs(model_folder, exist_ok=True)
         if inc_history:
@@ -748,15 +751,17 @@ class Automate_Training():
         #############plot direction real test ##########################################-------------------------------------------------
         files_real_test = os.listdir(self.real_test_data_path)
         for file in files_real_test:
-            if file == "patient024_frame01_slice_3_ACDC.npy":
+            if file == "patient_4d_frame_1.npy":
                 real_moving_image = np.load(os.path.join(self.real_test_data_path, file))
-            elif file == "patient024_frame09_slice_3_ACDC.npy":
+            elif file == "patient_4d_frame_13.npy":
                 real_fixed_image = np.load(os.path.join(self.real_test_data_path, file))
             elif file == "patient_053_frame_4_slice3_mask.npy":
                 mask_image = np.load(os.path.join(self.real_test_data_path, file))
         # real_moving_image = real_moving_image.astype(np.int16)
         # real_fixed_image = real_fixed_image.astype(np.int16)
-        
+        # real_moving_image = cv2.normalize(real_moving_image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        # real_fixed_image = cv2.normalize(real_fixed_image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+  
         # real_moving_image= np.rot90(real_moving_image, 3)
         # real_moving_image = np.fliplr(real_moving_image)
         # real_fixed_image = np.rot90(real_fixed_image,3)
@@ -771,89 +776,90 @@ class Automate_Training():
         real_fixed_image_expanded = tf.expand_dims(real_fixed_image, axis=0)
         
         predicted_deformation_field = model.predict([real_moving_image_expanded, real_fixed_image_expanded])
+    
         data['displacements'] = predicted_deformation_field[0]
 
         x_displacement_predicted = predicted_deformation_field[0, :, :, 0]  
         y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
-        fig, ax = plt.subplots(1, 3, figsize=(10, 5))
-        ax[0].imshow(real_moving_image, cmap='gray')
-        ax[0].set_title('Moving Image')
+        # fig, ax = plt.subplots(1, 3, figsize=(10, 5))
+        # ax[0].imshow(real_moving_image, cmap='gray')
+        # ax[0].set_title('Moving Image')
 
-        ax[1].imshow(real_fixed_image, cmap='gray')
-        ax[1].set_title('Fixed Image')
+        # ax[1].imshow(real_fixed_image, cmap='gray')
+        # ax[1].set_title('Fixed Image')
 
-                # Prepare the meshgrid for arrows
-        grid_spacing = 5  # adjust for density of arrows
-        h, w = real_moving_image.shape
-        Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
+        #         # Prepare the meshgrid for arrows
+        # grid_spacing = 5  # adjust for density of arrows
+        # h, w = real_moving_image.shape
+        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
 
-        # Subsample displacements according to grid spacing
-        U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # # Subsample displacements according to grid spacing
+        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
 
-        ax[2].imshow(real_moving_image, cmap='gray')
+        # ax[2].imshow(real_moving_image, cmap='gray')
 
-        # Overlay the displacement vectors (arrows)
-        ax[2].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
+        # # Overlay the displacement vectors (arrows)
+        # ax[2].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
 
-        ax[2].set_title('Predicted Displacement Field over Moving Image')
-        ax[2].axis('off')
+        # ax[2].set_title('Predicted Displacement Field over Moving Image')
+        # ax[2].axis('off')
 
-        # Save the plot
+        # # Save the plot
         
-        direction_plot_path = os.path.join(model_folder, f"direction_plot_real_test{model_name}.png")
-        plt.savefig(direction_plot_path)
-        plt.close()
+        # direction_plot_path = os.path.join(model_folder, f"direction_plot_real_test{model_name}.png")
+        # plt.savefig(direction_plot_path)
+        # plt.close()
 
         #################################### plot strain over the real data ########################################################
-        Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
-        vmin, vmax = np.min(Ep2All), np.max(Ep1All)
-        fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+        # Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
+        # vmin, vmax = np.min(Ep2All), np.max(Ep1All)
+        # fig, ax = plt.subplots(1, 4, figsize=(15, 5))
 
-        im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider1 = make_axes_locatable(ax[0])
-        cax1 = divider1.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im1, cax=cax1, shrink=0.8)
-        ax[0].set_title('Ep1All')
+        # im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider1 = make_axes_locatable(ax[0])
+        # cax1 = divider1.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im1, cax=cax1, shrink=0.8)
+        # ax[0].set_title('Ep1All')
 
         
-        im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider2 = make_axes_locatable(ax[1])
-        cax2 = divider2.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im2, cax=cax2, shrink=0.8)
-        ax[1].set_title('Ep2All')
+        # im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider2 = make_axes_locatable(ax[1])
+        # cax2 = divider2.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im2, cax=cax2, shrink=0.8)
+        # ax[1].set_title('Ep2All')
 
-        im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider3 = make_axes_locatable(ax[2])
-        cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im3, cax=cax3, shrink=0.8)
-        ax[2].set_title('Ep3All')
+        # im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider3 = make_axes_locatable(ax[2])
+        # cax3 = divider3.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im3, cax=cax3, shrink=0.8)
+        # ax[2].set_title('Ep3All')
 
-        # Prepare the meshgrid for arrows
-        grid_spacing = 5  # adjust for density of arrows
-        h, w = real_moving_image.shape
-        Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
+        # # Prepare the meshgrid for arrows
+        # grid_spacing = 5  # adjust for density of arrows
+        # h, w = real_moving_image.shape
+        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
 
-        # Subsample displacements according to grid spacing
-        U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # # Subsample displacements according to grid spacing
+        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
 
-        ax[3].imshow(real_moving_image, cmap='gray')
+        # ax[3].imshow(real_moving_image, cmap='gray')
 
-        # Overlay the displacement vectors (arrows)
-        ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
+        # # Overlay the displacement vectors (arrows)
+        # ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
 
-        ax[3].set_title('Predicted Displacement Field over Moving Image')
-        ax[3].axis('off')
+        # ax[3].set_title('Predicted Displacement Field over Moving Image')
+        # ax[3].axis('off')
 
 
-        # Save the plot
+        # # Save the plot
 
-        for i in range (3):
-            ax[i].axis('off')
-        strain_plot_path = os.path.join(model_folder, f"strain_plot_real_test{model_name}.png")
-        plt.savefig(strain_plot_path)
-        plt.close()
+        # for i in range (3):
+        #     ax[i].axis('off')
+        # strain_plot_path = os.path.join(model_folder, f"strain_plot_real_test{model_name}.png")
+        # plt.savefig(strain_plot_path)
+        # plt.close()
 
         ################################################ plot moving and fixed and warped images real test ############################################
 
@@ -1033,7 +1039,7 @@ class Automate_Training():
         plt.savefig(warped_image_path)
         plt.close()
 
-        model_name_train = model_name + "_train"
+        model_name_train = model_name + "_train" + "with_mask"
         self.create_interactive_plots(data, model_name_train, model_folder)
 
         ##################################### plot strain over the real data ############################################################
@@ -1106,9 +1112,12 @@ class Automate_Training():
         
         moving_image_try = self.moving_images_test[test_sample]
         fixed_image_try = self.fixed_images_test[test_sample]
+        data['moving'] = moving_image_try
+        data['fixed'] = fixed_image_try
         moving_image_try = tf.expand_dims(moving_image_try, axis=0)
         fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
         predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
+        data['displacements'] = predicted_deformation_field[0]
         x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
         y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
         x_displacement = self.y_test[test_sample, :, :, 0]
@@ -1133,6 +1142,7 @@ class Automate_Training():
         direction_plot_path = os.path.join(model_folder, f"direction_plot_test{model_name}.png")
         plt.savefig(direction_plot_path)
         plt.close()
+        # self.create_interactive_plots(data, model_name, model_folder)
         
         ############################## plot magnitude of the displacement test ####################################################################
         magnitude_actual = np.sqrt(x_displacement ** 2 + y_displacement ** 2)
@@ -1352,8 +1362,8 @@ if __name__ == '__main__':
     # physical_devices = tf.config.experimental.list_physical_devices('GPU')
     # print("Num GPUs Available: ", len(physical_devices))
 
-    dataset_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/Simulated_V2"
-    real_test_data_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/real_test_data"
+    dataset_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/Simulated_V2.1"
+    real_test_data_path = "../FrameWork/real_test_data"
     current_script = Path(__file__)
     # models_list = [ Residual_Unet(),Unet(), Unet_7Kernel(), Unet_5Kernel(), Unet_3Dense(), Unet_1Dense(), Unet_2Dense(), Unet_1Dense_7Kernel(), Unet_1Dense_5Kernel(), Unet_2Dense_7Kernel(), Unet_2Dense_5Kernel(), Unet_3Dense_7Kernel(), Unet_3Dense_5Kernel(), Residual_Unet_1D(), Residual_Unet_2D(), Residual_Unet_3D(), Residual_Unet_1D_7K(), Residual_Unet_1D_5K(), Residual_Unet_2D_7K(), Residual_Unet_2D_5K(), Residual_Unet_3D_7K(), Residual_Unet_3D_5K()]
     models_list=[Unet()]
@@ -1363,10 +1373,10 @@ if __name__ == '__main__':
     os.makedirs(saved_model_dir, exist_ok=True)
     trainer = Automate_Training(dataset_path,real_test_data_path, models_list, save_dir, saved_model_dir)
     
-    model_name = "Unet_loaded"
-    history = None
-    # trainer.train_models(num_epochs = 100, batch_size = 32)
-    # model = tf.keras.models.load_model("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/Models/Unet.keras")
+    # model_name = "Unet_loaded"
+    # history = None
+    trainer.train_models(num_epochs = 100, batch_size = 32)
+    # model = tf.keras.models.load_model("/Users/ahmed_ali/Library/CloudStorage/GoogleDrive-ahmed.rajab502@eng-st.cu.edu.eg/My Drive/Models/Unet.keras", custom_objects={'MaskLoss': MaskLoss, 'MAELoss': MAELoss, 'Unet': Unet})
     # trainer.visualise_outputs(model_name, history, model, inc_history = False)
 
     
