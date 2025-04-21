@@ -21,10 +21,13 @@
   "generator": {
     "folder": "train_numpy",
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     "DATASET_SIZE": 2000,
     "patients_start": 50,
     "patients_end": 100
 =======
+=======
+>>>>>>> Stashed changes
     "DATASET_SIZE": 20,
     "patients_start": 1,
     "patients_end": 51

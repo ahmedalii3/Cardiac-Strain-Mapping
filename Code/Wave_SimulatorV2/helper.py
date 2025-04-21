@@ -41,7 +41,11 @@ def dilate_mask(mask):
     dilated_mask = mask
     process_mask = mask
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     for i in range(8):            
+=======
+    for i in range(5):        
+>>>>>>> Stashed changes
 =======
     for i in range(5):        
 >>>>>>> Stashed changes
