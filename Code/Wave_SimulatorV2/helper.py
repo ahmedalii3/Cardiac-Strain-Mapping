@@ -43,7 +43,7 @@ def load_image(path,isMask=False):
 
 def dilate_mask(mask):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-    value = 0.7
+    value = 0.9
     dilated_mask = mask
     process_mask = mask
     for i in range(5):        

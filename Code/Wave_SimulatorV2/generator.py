@@ -48,7 +48,7 @@ class DirectoryManager:
     def __init__(self):
         self.current_script = Path(__file__)
         self.project_root = self.current_script.parent.parent.parent
-        self.data_dir = self.project_root / "Data" / "ACDC" / "database"
+        self.data_dir = self.project_root / "Data" / "ACDC"
         self.saved_displacements = self.current_script.parent / "generatedData" / "Displacements"
         self.saved_frames = self.current_script.parent / "generatedData" / "Frames"
         
@@ -217,6 +217,8 @@ def main():
         patient_number = str(np.random.randint(params['patinet_start'], params['patinet_end'])).zfill(3)
         slice_number = np.random.randint(1, 6)
         for frame_number in range(1, 31):
+            frame_number = str(frame_number).zfill(2)
+            
             combination = (patient_number, frame_number, slice_number)
             if combination not in processed_combinations:
                 npy_file = dir_manager.get_npy_path(patient_number, frame_number, slice_number)
