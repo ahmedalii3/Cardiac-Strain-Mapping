@@ -262,7 +262,7 @@ def main():
                     ani_masked = animate_deformed_masked_mri(
                         Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj,
                         output_filename="deformed_mri_masked_polar_rescaled.mp4",
-                        save_file=True, save_mode=True, patinet_file_name=npy_file
+                        save_file=True, save_mode=True, patinet_file_name=npy_file, json_mode=False
                     )
                     
                     file_count = len([f for f in dir_manager.saved_displacements.glob('*') 

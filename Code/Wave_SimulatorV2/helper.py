@@ -2,6 +2,9 @@ import os
 import numpy as np
 import cv2
 from scipy.ndimage import gaussian_filter
+import json
+from typing import Any, Union
+import matplotlib.pyplot as plt
 
 def load_image(path,isMask=False):
         # Load the image array from the .npy file
@@ -37,7 +40,11 @@ def dilate_mask(mask):
     value = 0.7
     dilated_mask = mask
     process_mask = mask
+<<<<<<< Updated upstream
     for i in range(8):            
+=======
+    for i in range(5):        
+>>>>>>> Stashed changes
         old_process_mask = process_mask
         process_mask = cv2.dilate(process_mask, kernel)
 
@@ -46,8 +53,12 @@ def dilate_mask(mask):
 
         # Update the dilated image
         dilated_mask = dilated_mask + added_region * value
-        value -= 0.1
+        value *= 0.6
     dilated_mask = gaussian_filter(dilated_mask, sigma=2)
+    plt.imshow(dilated_mask)
+    plt.title('Dilated Mask')
+    plt.axis('off')
+    plt.show()
     return dilated_mask
 
 def save_if_not_exists(file_paths):
@@ -56,3 +67,20 @@ def save_if_not_exists(file_paths):
         if os.path.exists(path + '.npy'):
             return False
     return True
+
+
+def numpy_to_serializable(obj: Union[np.ndarray, Any]) -> Any:
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, (np.float32, np.float64, np.int32, np.int64)):
+        return obj.item()
+    elif isinstance(obj, dict):
+        return {k: numpy_to_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [numpy_to_serializable(v) for v in obj]
+    else:
+        return obj
+
+def save_json_array(array: np.ndarray, filepath: str) -> None:
+    with open(filepath, 'w') as f:
+        json.dump(numpy_to_serializable(array), f, indent=4)

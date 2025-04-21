@@ -1,0 +1,370 @@
+# %%
+import numpy as np
+import matplotlib.pyplot as plt
+
+x_disp = np.load('/Users/osama/Downloads/generatedData/patient008_frame13_slice_9_ACDC_#0_x.npy')
+y_disp = np.load('/Users/osama/Downloads/generatedData/patient008_frame13_slice_9_ACDC_#0_y.npy')
+frame1 = np.load('/Users/osama/Downloads/generatedData/patient008_frame13_slice_9_ACDC_#0_1.npy')
+frame2 = np.load('/Users/osama/Downloads/generatedData/patient008_frame13_slice_9_ACDC_#0_2.npy')
+# %%
+# plt.imshow(frame1)
+# plt.imshow(x_disp, alpha=0.5, cmap='jet')
+# plt.colorbar()
+
+# %%
+# def limit_strain_range(displacement_x, displacement_y, stretch, strain_upper_bound, 
+#                      reduction_factor=0.99, amplification_factor=1.01, max_iterations=1000, tolerance=1e-6):
+#     """
+#     Convert displacement maps to strain tensors using Eulerian strain formulation.
+#     Iteratively adjust displacements until all strain values are within the specified bounds:
+#     - Reduce displacements if strain exceeds upper bound
+#     - Amplify displacements if strain is below lower bound
+    
+#     Parameters:
+#     -----------
+#     displacement_x : numpy.ndarray
+#         Displacement field in x-direction
+#     displacement_y : numpy.ndarray
+#         Displacement field in y-direction
+#     strain_lower_bound : float
+#         Minimum desired strain value
+#     strain_upper_bound : float
+#         Maximum allowable strain value
+#     reduction_factor : float, optional
+#         Factor by which to reduce displacements each iteration (default: 0.99)
+#     amplification_factor : float, optional
+#         Factor by which to amplify displacements each iteration (default: 1.01)
+#     max_iterations : int, optional
+#         Maximum number of iterations to perform (default: 1000)
+#     tolerance : float, optional
+#         Convergence tolerance (default: 1e-6)
+    
+#     Returns:
+#     --------
+#     tuple
+#         (adjusted_displacement_x, adjusted_displacement_y, 
+#          initial_strain_tensor, final_strain_tensor, max_initial_strain, max_final_strain)
+#     """
+#     # Ensure input arrays have the same shape
+#     if displacement_x.shape != displacement_y.shape:
+#         raise ValueError("Displacement maps must have the same shape")
+#     if stretch:
+#         strain_lower_bound = 0.01
+#     else:
+#         strain_lower_bound = 0
+    
+#     # Make copies of the input arrays to avoid modifying the originals
+#     dx = displacement_x.copy()
+#     dy = displacement_y.copy()
+
+#     # Create gradient operators for calculating spatial derivatives
+#     y_size, x_size = dx.shape
+    
+#     # Calculate initial strain tensor
+#     # Calculate displacement gradients using central differences
+#     dudx_initial = np.zeros_like(dx)
+#     dudy_initial = np.zeros_like(dx)
+#     dvdx_initial = np.zeros_like(dx)
+#     dvdy_initial = np.zeros_like(dx)
+    
+#     # Interior points (central differences)
+#     dudx_initial[1:-1, 1:-1] = (dx[1:-1, 2:] - dx[1:-1, :-2]) / 2
+#     dudy_initial[1:-1, 1:-1] = (dx[2:, 1:-1] - dx[:-2, 1:-1]) / 2
+#     dvdx_initial[1:-1, 1:-1] = (dy[1:-1, 2:] - dy[1:-1, :-2]) / 2
+#     dvdy_initial[1:-1, 1:-1] = (dy[2:, 1:-1] - dy[:-2, 1:-1]) / 2
+    
+#     # Edges (forward/backward differences)
+#     # Left edge
+#     dudx_initial[:, 0] = dx[:, 1] - dx[:, 0]
+#     dvdx_initial[:, 0] = dy[:, 1] - dy[:, 0]
+#     # Right edge
+#     dudx_initial[:, -1] = dx[:, -1] - dx[:, -2]
+#     dvdx_initial[:, -1] = dy[:, -1] - dy[:, -2]
+#     # Top edge
+#     dudy_initial[0, :] = dx[1, :] - dx[0, :]
+#     dvdy_initial[0, :] = dy[1, :] - dy[0, :]
+#     # Bottom edge
+#     dudy_initial[-1, :] = dx[-1, :] - dx[-2, :]
+#     dvdy_initial[-1, :] = dy[-1, :] - dy[-2, :]
+    
+#     # Calculate Eulerian strain tensor components
+#     # E = 1/2 * (∇u + ∇u^T + ∇u^T∇u)
+#     E_xx_initial = 0.5 * (2*dudx_initial - dudx_initial**2 - dvdx_initial**2)
+#     E_yy_initial = 0.5 * (2*dvdy_initial - dudy_initial**2 - dvdy_initial**2)
+#     E_xy_initial = 0.5 * (dudy_initial + dvdx_initial - dudx_initial*dudy_initial - dvdx_initial*dvdy_initial)
+    
+#     # Calculate principal strains
+#     avg_normal_strain_initial = (E_xx_initial + E_yy_initial) / 2
+#     diff_normal_strain_initial = (E_xx_initial - E_yy_initial) / 2
+#     radius_initial = np.sqrt(diff_normal_strain_initial**2 + E_xy_initial**2)
+    
+#     E1_initial = avg_normal_strain_initial + radius_initial  # Maximum principal strain
+#     E2_initial = avg_normal_strain_initial - radius_initial  # Minimum principal strain
+
+#     E3_initial = 1 / ((1 + E1_initial) * (1 + E2_initial)) - 1
+    
+#     # Find maximum and minimum absolute strain values
+#     max_initial_strain = max(np.max(np.abs(E1_initial)), np.max(np.abs(E2_initial)))
+#     min_initial_strain = min(np.min(np.abs(E1_initial)), np.min(np.abs(E2_initial)))
+    
+#     # Store initial strain tensor
+#     initial_strain_tensor = {
+#         'E_xx': E_xx_initial,
+#         'E_yy': E_yy_initial,
+#         'E_xy': E_xy_initial,
+#         'E1': E1_initial,
+#         'E2': E2_initial,
+#         'E3': E3_initial,
+#         'min_abs_strain': min_initial_strain,
+#         'max_abs_strain': max_initial_strain
+#     }
+    
+#     # If initial strain is already within bounds, no need to iterate
+#     if (max_initial_strain <= strain_upper_bound) and (min_initial_strain >= strain_lower_bound):
+#         return dx, dy, initial_strain_tensor, initial_strain_tensor, max_initial_strain, max_initial_strain, min_initial_strain, min_initial_strain
+    
+#     # Otherwise, proceed with iterative adjustment
+#     iterations = 0
+#     max_strain = max_initial_strain
+#     min_strain = min_initial_strain
+#     prev_max_strain = float('inf')
+#     prev_min_strain = 0
+    
+#     # Initialize strain tensor components for the loop
+#     E_xx = E_xx_initial.copy()
+#     E_yy = E_yy_initial.copy()
+#     E_xy = E_xy_initial.copy()
+#     E1 = E1_initial.copy()
+#     E2 = E2_initial.copy()
+    
+#     while ((max_strain > strain_upper_bound) or (min_strain < strain_lower_bound)) and (iterations < max_iterations):
+#         # Determine whether to reduce or amplify displacements
+#         if max_strain > strain_upper_bound:
+#             # Reduce displacements if above upper bound
+#             adjustment_factor = reduction_factor
+#         elif min_strain < strain_lower_bound:
+#             # Amplify displacements if below lower bound
+#             adjustment_factor = amplification_factor
+#         else:
+#             # This shouldn't happen due to the while condition, but just in case
+#             break
+        
+#         # Apply adjustment
+#         dx *= adjustment_factor
+#         dy *= adjustment_factor
+        
+#         # Recalculate displacement gradients
+#         dudx = np.zeros_like(dx)
+#         dudy = np.zeros_like(dx)
+#         dvdx = np.zeros_like(dx)
+#         dvdy = np.zeros_like(dx)
+        
+#         # Interior points (central differences)
+#         dudx[1:-1, 1:-1] = (dx[1:-1, 2:] - dx[1:-1, :-2]) / 2
+#         dudy[1:-1, 1:-1] = (dx[2:, 1:-1] - dx[:-2, 1:-1]) / 2
+#         dvdx[1:-1, 1:-1] = (dy[1:-1, 2:] - dy[1:-1, :-2]) / 2
+#         dvdy[1:-1, 1:-1] = (dy[2:, 1:-1] - dy[:-2, 1:-1]) / 2
+        
+#         # Edges (forward/backward differences)
+#         # Left edge
+#         dudx[:, 0] = dx[:, 1] - dx[:, 0]
+#         dvdx[:, 0] = dy[:, 1] - dy[:, 0]
+#         # Right edge
+#         dudx[:, -1] = dx[:, -1] - dx[:, -2]
+#         dvdx[:, -1] = dy[:, -1] - dy[:, -2]
+#         # Top edge
+#         dudy[0, :] = dx[1, :] - dx[0, :]
+#         dvdy[0, :] = dy[1, :] - dy[0, :]
+#         # Bottom edge
+#         dudy[-1, :] = dx[-1, :] - dx[-2, :]
+#         dvdy[-1, :] = dy[-1, :] - dy[-2, :]
+        
+#         # Calculate Eulerian strain tensor components
+#         # E = 1/2 * (∇u + ∇u^T + ∇u^T∇u)
+#         E_xx = 0.5 * (2*dudx - dudx**2 - dvdx**2)
+#         E_yy = 0.5 * (2*dvdy - dudy**2 - dvdy**2)
+#         E_xy = 0.5 * (dudy + dvdx - dudx*dudy - dvdx*dvdy)
+        
+#         # Calculate principal strains
+#         avg_normal_strain = (E_xx + E_yy) / 2
+#         diff_normal_strain = (E_xx - E_yy) / 2
+#         radius = np.sqrt(diff_normal_strain**2 + E_xy**2)
+        
+#         E1 = avg_normal_strain + radius  # Maximum principal strain
+#         E2 = avg_normal_strain - radius  # Minimum principal strain
+#         E3 = 1 / ((1 + E1) * (1 + E2)) - 1
+        
+#         # Find maximum and minimum absolute strain values
+#         max_strain = max(np.max(np.abs(E1)), np.max(np.abs(E2)))
+#         min_strain = min(np.min(np.abs(E1)), np.min(np.abs(E2)))
+        
+#         # Check convergence
+#         if (abs(max_strain - prev_max_strain) < tolerance and 
+#             abs(min_strain - prev_min_strain) < tolerance):
+#             break
+        
+#         prev_max_strain = max_strain
+#         prev_min_strain = min_strain
+#         iterations += 1
+    
+#     # Prepare final strain tensor
+#     final_strain_tensor = {
+#         'E_xx': E_xx,
+#         'E_yy': E_yy,
+#         'E_xy': E_xy,
+#         'E1': E1,
+#         'E2': E2,
+#         'E3': E3,
+#         'min_abs_strain': min_strain,
+#         'max_abs_strain': max_strain
+#     }
+    
+#     return dx, dy, initial_strain_tensor, final_strain_tensor, max_initial_strain, max_strain, min_initial_strain, min_strain
+
+
+import numpy as np
+
+import numpy as np
+
+def calculate_and_adjust_euler_strain(x_disp, y_disp, deltaX, deltaY, StrainEpPeak, strain_tolerance=0.01, max_iterations=20):
+    """
+    Calculate Euler strain from 2D displacement fields and adjust them to match a target strain peak.
+    
+    Parameters:
+    x_disp : np.ndarray
+        X-displacement field (shape: [H, W])
+    y_disp : np.ndarray
+        Y-displacement field (shape: [H, W])
+    deltaX : float
+        Spatial resolution in the X direction
+    deltaY : float
+        Spatial resolution in the Y direction
+    StrainEpPeak : float
+        Target strain level for normalization
+    strain_tolerance : float
+        Allowable tolerance for strain values
+    max_iterations : int
+        Maximum number of iterations to adjust displacement
+    
+    Returns:
+    x_disp : np.ndarray
+        Adjusted X-displacement field
+    y_disp : np.ndarray
+        Adjusted Y-displacement field
+    Ep1 : np.ndarray
+        First principal strain
+    Ep2 : np.ndarray
+        Second principal strain
+    Ep3 : np.ndarray
+        Third principal strain
+    strain_history : list
+        Maximum strain over iterations
+    """
+    # Convert inputs to numpy arrays
+    x_disp = np.array(x_disp)
+    y_disp = np.array(y_disp)
+    
+    strain_history = []  # To store the maximum strain over iterations
+
+    for iteration in range(max_iterations):
+        # Compute gradients over the spatial dimensions
+        UXx, UXy = np.gradient(x_disp, deltaX, deltaY, axis=(0, 1))
+        UYx, UYy = np.gradient(y_disp, deltaX, deltaY, axis=(0, 1))
+
+        # Eulerian strain tensor components
+        Exx = (2 * UXx - (UXx**2 + UYx**2)) / 2
+        Exy = (UXy + UYx - (UXx * UXy + UYx * UYy)) / 2
+        Eyy = (2 * UYy - (UXy**2 + UYy**2)) / 2
+
+        # Principal strains (in-plane)
+        ThetaEp = 0.5 * np.arctan2(2 * Exy, Exx - Eyy)
+        Ep1 = (Exx + Eyy) / 2 + np.sqrt(((Exx - Eyy) / 2) ** 2 + Exy ** 2)
+        Ep2 = (Exx + Eyy) / 2 - np.sqrt(((Exx - Eyy) / 2) ** 2 + Exy ** 2)
+
+        # Compute the third strain component using incompressibility assumption
+        Ep3 = 1 / ((1 + np.maximum(Ep1, Ep2)) * (1 + np.minimum(Ep1, Ep2))) - 1
+
+        # Compute the maximum absolute strain
+        stacked_strains = np.stack([Ep1, Ep2, Ep3])  # Shape: (3, H, W)
+        max_per_component = np.max(np.abs(stacked_strains), axis=(1, 2))  # Shape: (3,)
+        MaxEp = np.max(max_per_component)  # Scalar
+        strain_history.append(MaxEp)
+
+        # Check if the strain is within the tolerance
+        if np.abs(MaxEp - StrainEpPeak) < strain_tolerance:
+            print(f"Converged in {iteration + 1} iterations")
+            break
+
+        # Compute scaling factor
+        scale_factor = StrainEpPeak / (MaxEp + np.finfo(float).eps)  # Avoid division by zero
+        scale_factor = np.clip(scale_factor, 0.95, 1.05)  # Limit scaling per iteration
+
+        # Apply scaling to adjust the displacement fields
+        x_disp *= scale_factor
+        y_disp *= scale_factor
+
+    # Final strain calculation after adjustment
+    UXx, UXy = np.gradient(x_disp, deltaX, deltaY, axis=(0, 1))
+    UYx, UYy = np.gradient(y_disp, deltaX, deltaY, axis=(0, 1))
+
+    # Eulerian strain tensor components
+    Exx = (2 * UXx - (UXx**2 + UYx**2)) / 2
+    Exy = (UXy + UYx - (UXx * UXy + UYx * UYy)) / 2
+    Eyy = (2 * UYy - (UXy**2 + UYy**2)) / 2
+
+    # Principal strains (in-plane)
+    ThetaEp = 0.5 * np.arctan2(2 * Exy, Exx - Eyy)
+    Ep1 = (Exx + Eyy) / 2 + np.sqrt(((Exx - Eyy) / 2) ** 2 + Exy ** 2)
+    Ep2 = (Exx + Eyy) / 2 - np.sqrt(((Exx - Eyy) / 2) ** 2 + Exy ** 2)
+
+    # Compute the third strain component using incompressibility assumption
+    Ep3 = 1 / ((1 + np.maximum(Ep1, Ep2)) * (1 + np.minimum(Ep1, Ep2))) - 1
+
+    return x_disp, y_disp, Ep1, Ep2, Ep3, strain_history
+
+#calculate strain
+deltaX = 1.0  # Spatial resolution in the X direction
+deltaY = 1.0  # Spatial resolution in the Y direction
+StrainEpPeak = 0.1  # Target strain level for normalization
+FrameDisplX, FrameDisplY, Ep1All, Ep2All, Ep3All, strain_history = calculate_and_adjust_euler_strain(x_disp, y_disp, deltaX, deltaY, StrainEpPeak)
+
+
+# %%
+# dx, dy, initial_strain_tensor, final_strain_tensor, max_initial_strain, max_strain, min_initial_strain, min_strain = limit_strain_range(x_disp, y_disp, False, 1)
+
+# %%
+# Calculate magnitude of displacement vector
+disp_mag = np.sqrt(x_disp**2 + y_disp**2)
+#normalize the displacement magnitude
+# disp_mag = (disp_mag - np.min(disp_mag)) / (np.max(disp_mag) - np.min(disp_mag))
+
+# Crop the region of interest
+disp_mag_crop = disp_mag
+# disp_mag_crop = disp_mag
+
+# Plot the three images side-by-side
+fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+
+# E1 strain
+# im1 = axs[0].imshow(final_strain_tensor['E1'][150:350, 150:350], cmap='jet', vmin=-0.4, vmax=0.4)
+im1 = axs[0].imshow(Ep1All, cmap='jet', vmin=-0.4, vmax=0.4)
+axs[0].set_title("E1 Strain")
+fig.colorbar(im1, ax=axs[0])
+
+# E2 strain
+# im2 = axs[1].imshow(final_strain_tensor['E2'][150:350, 150:350], cmap='jet', vmin=-0.4, vmax=0.4)
+im2 = axs[1].imshow(Ep2All, cmap='jet', vmin=-0.4, vmax=0.4)
+axs[1].set_title("E2 Strain")
+fig.colorbar(im2, ax=axs[1])
+
+# Displacement magnitude
+im3 = axs[2].imshow(x_disp+y_disp, cmap='jet', vmin=-12, vmax=12)
+# im3 = axs[2].imshow(y_disp[150:350, 150:350], cmap='jet', vmin=-12, vmax=12)
+# im3 = axs[2].imshow(x_disp[150:350, 150:350] ,cmap='jet', vmin=-12, vmax=12,alpha=0.5)
+# im3 = axs[2].imshow(frame1[150:350, 150:350],alpha=0.5)
+axs[2].set_title("Displacement Magnitude")
+fig.colorbar(im3, ax=axs[2])
+
+plt.tight_layout()
+plt.show()
+

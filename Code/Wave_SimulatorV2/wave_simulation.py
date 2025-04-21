@@ -3,7 +3,7 @@ import numpy as np
 from dataclasses import dataclass, field
 import random
 from scipy.ndimage import gaussian_filter
-from helper import dilate_mask, save_if_not_exists
+from helper import dilate_mask, save_if_not_exists, save_json_array
 import matplotlib as mpl
 # mpl.rcParams['animation.ffmpeg_path'] = '/usr/local/bin/ffmpeg'
 
@@ -813,7 +813,7 @@ def animate_deformed_mri(MaskHT0, FrameDisplX, FrameDisplY, output_filename="def
     return ani
 
 
-def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output_filename="deformed_mri.mp4", save_file=False, save_mode=False, patinet_file_name=""):
+def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output_filename="deformed_mri.mp4", save_file=False, save_mode=False, patinet_file_name="",json_mode=False):
     """
     Creates an animated visualization of the deformed MRI image over time and saves it as an MP4.
 
@@ -829,34 +829,35 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output
 
     num_frames = FrameDisplX.shape[2]  # Number of frames in the animation
     height, width, _ = Image.shape  # Image dimensions
-
-    # Create a meshgrid for remapping
-    x, y = np.meshgrid(np.arange(width), np.arange(height))
+    
     # Set up the figure for animation
     fig, ax = plt.subplots(figsize=(6, 6))
     im = ax.imshow(Image, cmap="gray", animated=True)
     ax.set_title("Deformed MRI Image Over Time")
     ax.axis("off")
-    MaskHT0_deformed = MaskHT0
+    MaskHT0_deformed = MaskHT0.copy()
     # Update function for animation
     def update(frame):
         nonlocal MaskHT0, MaskHT0_deformed, patinet_file_name
-        Image_deformed = Image
+        # nonlocal Image_deformed
 
+
+        Image_deformed = Image.copy()
         # Compute displacement (negate to match MATLAB)
         T3DDispX = -FrameDisplX[:, :, frame].astype(np.float64)
         T3DDispY = -FrameDisplY[:, :, frame].astype(np.float64)
         MaskHT0_deformed = MaskHT0_deformed[..., 0].astype(np.float64) / 255
         dilated_MaskHT0 = dilate_mask(MaskHT0_deformed)
         
-        T3DDispX_masked = T3DDispX * dilated_MaskHT0
-        T3DDispY_masked = T3DDispY * dilated_MaskHT0
+        T3DDispX_masked = (T3DDispX * dilated_MaskHT0)
+        T3DDispY_masked = (T3DDispY * dilated_MaskHT0)
         
 
         displacementX_save = T3DDispX_masked
         displacementY_save = T3DDispY_masked
         frame1 = Image_deformed
         # Compute new coordinates
+        x, y = np.meshgrid(np.arange(width), np.arange(height))
         x_new_masked = (x + T3DDispX_masked).astype(np.float32)
         y_new_masked = (y + T3DDispY_masked).astype(np.float32)
         # Compute new coordinates
@@ -866,32 +867,46 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output
         # Apply remap to warp the image
         Image_deformed = cv2.remap(Image_deformed, x_new_masked, y_new_masked, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
         MaskHT0_deformed = cv2.remap(MaskHT0, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)        
-        # Image_deformed = apply_displacement(Image, T3DDispX_masked, T3DDispY_masked)
-        # MaskHT0_deformed = apply_displacement(MaskHT0, T3DDispX, T3DDispY)
         
         frame2 = Image_deformed
 
         
         if save_mode:
-            #generate random probability to save the frame
             if np.random.rand() > 0.5:
                 base_name = os.path.basename(patinet_file_name)
                 patinet_file_name = os.path.splitext(base_name)[0]
-                
-                # Create file paths
-                frame1_path = f"generatedData/Frames/{patinet_file_name}_#{frame}_1"
-                frame2_path = f"generatedData/Frames/{patinet_file_name}_#{frame}_2"
-                disp_x_path = f"generatedData/Displacements/{patinet_file_name}_#{frame}_x"
-                disp_y_path = f"generatedData/Displacements/{patinet_file_name}_#{frame}_y"
-                # Check if any of the files exist
-                if save_if_not_exists([frame1_path, frame2_path, disp_x_path, disp_y_path]):
-                    # Save all files if none exist
-                    np.save(frame1_path, frame1)
-                    np.save(frame2_path, frame2)
-                    np.save(disp_x_path, displacementX_save)
-                    np.save(disp_y_path, displacementY_save)                    
+                suffix = f"{patinet_file_name}_#{frame}"
+
+                # Construct paths
+                frame1_path = f"generatedData/Frames/{suffix}_1"
+                frame2_path = f"generatedData/Frames/{suffix}_2"
+                disp_x_path = f"generatedData/Displacements/{suffix}_x"
+                disp_y_path = f"generatedData/Displacements/{suffix}_y"
+
+                ext = ".json" if json_mode else ".npy"
+                frame1_file = frame1_path + ext
+                frame2_file = frame2_path + ext
+                disp_x_file = disp_x_path + ext
+                disp_y_file = disp_y_path + ext
+
+                paths = [frame1_file, frame2_file, disp_x_file, disp_y_file]
+
+                if save_if_not_exists(paths):
+                    os.makedirs("generatedData/Frames", exist_ok=True)
+                    os.makedirs("generatedData/Displacements", exist_ok=True)
+
+                    if json_mode:
+                        save_json_array(frame1, frame1_file)
+                        save_json_array(frame2, frame2_file)
+                        save_json_array(displacementX_save, disp_x_file)
+                        save_json_array(displacementY_save, disp_y_file)
+                    else:
+                        np.save(frame1_path, frame1)
+                        np.save(frame2_path, frame2)
+                        np.save(disp_x_path, displacementX_save)
+                        np.save(disp_y_path, displacementY_save)
                 else:
-                    print(f"Skipped saving: One or more files already exist for {patinet_file_name}_#{frame}")   
+                    print(f"Skipped saving: One or more files already exist for {suffix}")
 
         # Update the animation frame
         im.set_array(Image_deformed)
