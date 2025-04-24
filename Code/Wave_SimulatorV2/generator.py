@@ -14,6 +14,7 @@ from wave_simulation import (
     animate_deformed_masked_mri
 )
 import json
+os.chdir(os.path.dirname(__file__)) #change working directory to current directory
 
 class ConfigLoader:
     def __init__(self, config_path):
@@ -261,11 +262,17 @@ def main():
                         strain_tolerance=params['strain_tolerance'], max_iterations=params['max_iterations']
                     )
                     
-                    ani_masked = animate_deformed_masked_mri(
-                        Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj,
-                        output_filename="deformed_mri_masked_polar_rescaled.mp4",
-                        save_file=True, save_mode=True, patinet_file_name=npy_file, json_mode=False
+                    # Ensure Image and MaskHT0 are 2D (remove fake RGB dimension if present)
+                    if Image.ndim == 3 and Image.shape[2] == 3:
+                        Image = Image[:, :, 0]
+
+                    if Mask.ndim == 3 and Mask.shape[2] == 3:
+                        Mask = Mask[:, :, 0]
+
+                    ani, Image_deformed_all, Mask_deformed_all, T3DDispX_masked_all, T3DDispY_masked_all, MaskFadedDefrmd_all = animate_deformed_masked_mri(
+                    Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, save_file=True, save_mode=True, json_mode=False, patinet_file_name= npy_file
                     )
+
                     
                     file_count = len([f for f in dir_manager.saved_displacements.glob('*') 
                                     if f.is_file() and f.name != ".DS_Store"])

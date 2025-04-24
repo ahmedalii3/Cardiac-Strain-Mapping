@@ -1,16 +1,14 @@
-import os
 import numpy as np
+import os
 from dataclasses import dataclass, field
 import random
 from scipy.ndimage import gaussian_filter
-from helper import dilate_mask, save_if_not_exists, save_json_array
+from helper import dilate_mask, dilate_mask_fade, dilate_mask_fade_cosine, dilate_mask_fade_smooth, save_if_not_exists, save_json_array
 import matplotlib as mpl
-# mpl.rcParams['animation.ffmpeg_path'] = '/usr/local/bin/ffmpeg'
+mpl.rcParams['animation.ffmpeg_path'] = '/opt/homebrew/bin/ffmpeg'
 
-# import matplotlib.animation as animation
-# animation.writers['ffmpeg'] 
-
-os.chdir(os.path.dirname(__file__)) #change working directory to current directory
+import matplotlib.animation as animation
+animation.writers['ffmpeg'] 
 
 @dataclass
 class StrainWaveParams:
@@ -365,10 +363,84 @@ def adjust_displacement_for_strain(FrameDisplX, FrameDisplY, deltaX, deltaY, Str
 
         # Check if the strain in all frames is within the tolerance
         if np.all(np.abs(MaxEp_per_frame - StrainEpPeak) < strain_tolerance):
-            print(f"Converged in {iteration + 1} iterations")
+            # print(f"Converged in {iteration + 1} iterations")
             break
 
     return FrameDisplX, FrameDisplY, Ep1All, Ep2All, Ep3All, strain_history
+
+###################################################################################################
+###################################################################################################
+###################################################################################################
+
+def enforce_full_principal_strain_order(Ep1All, Ep2All, Ep3All=None):
+    """
+    Ensure Ep1All >= Ep2All >= Ep3All at every voxel (pixel) location.
+    Sorts the three principal strains per point.
+
+    Args:
+        Ep1All (np.ndarray): First principal strain field.
+        Ep2All (np.ndarray): Second principal strain field.
+        Ep3All (np.ndarray): Third principal strain field (incompressibility strain).
+
+    Returns:
+        Ep1_sorted (np.ndarray): Largest principal strain.
+        Ep2_sorted (np.ndarray): Middle principal strain.
+        Ep3_sorted (np.ndarray): Smallest principal strain.
+    """
+
+    if Ep3All is not None:
+        # Stack all principal strains along a new axis
+        strain_stack = np.stack([Ep1All, Ep2All, Ep3All], axis=0)  # Shape (3, H, W, T)
+    else:
+        # Stack only the first two principal strains
+        strain_stack = np.stack([Ep1All, Ep2All, Ep2All], axis=0) # Shape (2, H, W, T)
+    # Sort along the new axis (axis=0) descending
+    strain_sorted = np.sort(strain_stack, axis=0)[::-1, ...]  # Reverse to get descending
+
+    Ep1_sorted = strain_sorted[0]
+    Ep2_sorted = strain_sorted[1]
+    Ep3_sorted = strain_sorted[2]
+
+    return Ep1_sorted, Ep2_sorted, Ep3_sorted
+
+
+def compute_strains(FrameDisplX, FrameDisplY, deltaX, deltaY):
+    """
+    Compute principal strains (Ep1, Ep2) and incompressibility strain (Ep3) 
+    from displacement fields.
+
+    Args:
+        FrameDisplX (np.ndarray): X displacement field (shape: H, W, T).
+        FrameDisplY (np.ndarray): Y displacement field (shape: H, W, T).
+        deltaX (float): Pixel spacing in the X direction (mm).
+        deltaY (float): Pixel spacing in the Y direction (mm).
+
+    Returns:
+        Ep1All (np.ndarray): Principal strain 1 (shape: H, W, T).
+        Ep2All (np.ndarray): Principal strain 2 (shape: H, W, T).
+        Ep3All (np.ndarray): Incompressibility strain (shape: H, W, T).
+    """
+    # Compute spatial gradients
+    UXx, UXy = np.gradient(FrameDisplX, deltaX, deltaY, axis=(0, 1))
+    UYx, UYy = np.gradient(FrameDisplY, deltaX, deltaY, axis=(0, 1))
+
+    # Compute Eulerian strain tensor components
+    ExxAll = (2 * UXx - (UXx**2 + UYx**2)) / 2
+    ExyAll = (UXy + UYx - (UXx * UXy + UYx * UYy)) / 2
+    EyyAll = (2 * UYy - (UXy**2 + UYy**2)) / 2
+
+    # Compute principal strains
+    Ep1All = (ExxAll + EyyAll) / 2 + np.sqrt(((ExxAll - EyyAll) / 2) ** 2 + ExyAll ** 2)
+    Ep2All = (ExxAll + EyyAll) / 2 - np.sqrt(((ExxAll - EyyAll) / 2) ** 2 + ExyAll ** 2)
+
+    Ep1All, Ep2All, _ = enforce_full_principal_strain_order(Ep1All, Ep2All)
+
+    # Compute incompressibility strain using the determinant rule
+    Ep3All = 1 / ((1 + np.maximum(Ep1All, Ep2All)) * (1 + np.minimum(Ep1All, Ep2All))) - 1
+
+
+
+    return Ep1All, Ep2All, Ep3All
 
 
 def adjust_displacement_with_ring(
@@ -413,18 +485,19 @@ def adjust_displacement_with_ring(
 
     for _ in range(max_iterations):
         # Compute gradients of displacement fields
-        UXx, UXy = np.gradient(FrameDisplX, deltaX, deltaY, axis=(0, 1))
-        UYx, UYy = np.gradient(FrameDisplY, deltaX, deltaY, axis=(0, 1))
+        #UXx, UXy = np.gradient(FrameDisplX, deltaX, deltaY, axis=(0, 1))
+        #UYx, UYy = np.gradient(FrameDisplY, deltaX, deltaY, axis=(0, 1))
 
         # Compute Eulerian strain tensor components
-        ExxAll = (2 * UXx - (UXx**2 + UYx**2)) / 2
-        ExyAll = (UXy + UYx - (UXx * UXy + UYx * UYy)) / 2
-        EyyAll = (2 * UYy - (UXy**2 + UYy**2)) / 2
+        #ExxAll = (2 * UXx - (UXx**2 + UYx**2)) / 2
+        #ExyAll = (UXy + UYx - (UXx * UXy + UYx * UYy)) / 2
+        #EyyAll = (2 * UYy - (UXy**2 + UYy**2)) / 2
 
         # Principal strains
-        Ep1All = (ExxAll + EyyAll) / 2 + np.sqrt(((ExxAll - EyyAll) / 2)**2 + ExyAll**2)
-        Ep2All = (ExxAll + EyyAll) / 2 - np.sqrt(((ExxAll - EyyAll) / 2)**2 + ExyAll**2)
-        Ep3All = 1 / ((1 + np.maximum(Ep1All, Ep2All)) * (1 + np.minimum(Ep1All, Ep2All))) - 1
+        #Ep1All = (ExxAll + EyyAll) / 2 + np.sqrt(((ExxAll - EyyAll) / 2)**2 + ExyAll**2)
+        #Ep2All = (ExxAll + EyyAll) / 2 - np.sqrt(((ExxAll - EyyAll) / 2)**2 + ExyAll**2)
+        #Ep3All = 1 / ((1 + np.maximum(Ep1All, Ep2All)) * (1 + np.minimum(Ep1All, Ep2All))) - 1
+        Ep1All, Ep2All, Ep3All = compute_strains(FrameDisplX, FrameDisplY, deltaX, deltaY)
 
         # Apply ring mask and calculate peak strain in the region of interest
         Ep_all_masked = np.stack([Ep1All, Ep2All, Ep3All]) * ring_mask_3d
@@ -524,7 +597,7 @@ def adjust_displacement_ignore_center(FrameDisplX, FrameDisplY, deltaX, deltaY, 
         Ep3All = 1 / ((1 + np.maximum(Ep1All, Ep2All)) * (1 + np.minimum(Ep1All, Ep2All))) - 1
         
         if np.all(np.abs(MaxEp_per_frame - StrainEpPeak) < strain_tolerance):
-            print(f"Converged in {iteration + 1} iterations")
+            # print(f"Converged in {iteration + 1} iterations")
             break
 
     return FrameDisplX, FrameDisplY, Ep1All, Ep2All, Ep3All, strain_history
@@ -672,71 +745,91 @@ def animate_wave_displacement(FrameDisplX, FrameDisplY, wind_dir_x, wind_dir_y, 
 ###################################################################################################
 ###################################################################################################
 
-def animate_strain_maps(Ep1All, Ep2All, Ep3All, vmin=-0.15, vmax=0.15, output_filename="strain_animation_with_colorbars.mp4", save_file=False):
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from IPython.display import HTML
+
+def animate_strain_maps(Ep1All, Ep2All, Ep3All,
+                        FrameDisplX=None, FrameDisplY=None,
+                        vmin=-0.15, vmax=0.15,
+                        output_filename="strain_animation.mp4",
+                        save_file=False):
     """
-    Creates an animated visualization of the three principal strain maps over time and saves it as an MP4.
+    Animate principal strains and optionally displacements over time.
 
     Args:
-        Ep1All (np.ndarray): Principal Strain 1 (shape: [H, W, Frames])
-        Ep2All (np.ndarray): Principal Strain 2 (shape: [H, W, Frames])
-        Ep3All (np.ndarray): Principal Strain 3 (shape: [H, W, Frames])
-        vmin (float): Minimum value for color scaling.
-        vmax (float): Maximum value for color scaling.
-        output_filename (str): Name of the saved MP4 file.
+        Ep1All, Ep2All, Ep3All: 3D arrays (H, W, T) of strains.
+        FrameDisplX, FrameDisplY (optional): 3D arrays (H, W, T) of displacements.
+        vmin, vmax: Colorbar limits for strain display.
+        output_filename: MP4 filename to save the animation.
+        save_file: Whether to save the animation to disk.
 
     Returns:
-        ani (FuncAnimation): The animation object for display in Jupyter Notebook.
+        ani: Animation object for inline Jupyter display.
     """
+    include_displacement = (FrameDisplX is not None) and (FrameDisplY is not None)
 
-    num_frames = Ep1All.shape[2]  # Number of frames in the animation
+    # Set up the figure
+    num_plots = 5 if include_displacement else 3
+    fig, axes = plt.subplots(1, num_plots, figsize=(5*num_plots, 5))
 
-    # Set up the figure for animation
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    if num_plots == 1:
+        axes = [axes]  # Ensure it's always iterable
 
-    # Initialize images and colorbars
     ims = []
     colorbars = []
-    titles = [r"$\varepsilon_1$ (Principal Strain 1)", 
-              r"$\varepsilon_2$ (Principal Strain 2)", 
-              r"$\varepsilon_3$ (Incompressibility Strain)"]
 
-    # Set up initial images and colorbars with a fixed range for color scaling
+    # Titles for each plot
+    titles = [
+        r"$\varepsilon_1$ (Principal Strain 1)",
+        r"$\varepsilon_2$ (Principal Strain 2)",
+        r"$\varepsilon_3$ (Incompressibility Strain)"
+    ]
+    if include_displacement:
+        titles += ["X Displacement", "Y Displacement"]
+
+    # Initial plots
+    datasets = [Ep1All, Ep2All, Ep3All]
+    if include_displacement:
+        datasets += [FrameDisplX, FrameDisplY]
+
+    vmin_list = [vmin, vmin, vmin]
+    vmax_list = [vmax, vmax, vmax]
+    if include_displacement:
+        # Dynamically set displacement vmin/vmax based on max of displacements
+        disp_vmax = max(np.abs(FrameDisplX).max(), np.abs(FrameDisplY).max())
+        vmin_list += [-disp_vmax, -disp_vmax]
+        vmax_list += [disp_vmax, disp_vmax]
+
     for i, ax in enumerate(axes):
-        im = ax.imshow(np.zeros_like(Ep1All[:, :, 0]), cmap='coolwarm', origin='lower', vmin=vmin, vmax=vmax, animated=True)
+        im = ax.imshow(np.zeros_like(Ep1All[:, :, 0]), cmap='coolwarm', origin='lower',
+                       vmin=vmin_list[i], vmax=vmax_list[i], animated=True)
         ax.set_title(titles[i])
         ax.axis("off")
         ims.append(im)
-
-        # Add colorbar beside each subplot
         cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         colorbars.append(cbar)
 
     # Update function for animation
     def update(frame):
-        # Update strain component plots
-        ims[0].set_array(Ep1All[:, :, frame])
-        ims[1].set_array(Ep2All[:, :, frame])
-        ims[2].set_array(Ep3All[:, :, frame])
-
-        # Update colorbars dynamically
-        for i, cbar in enumerate(colorbars):
-            cbar.mappable.set_array(ims[i].get_array())
-
+        for i, im in enumerate(ims):
+            im.set_array(datasets[i][:, :, frame])
         return ims
 
-    # Create the animation
+    # Create animation
+    num_frames = Ep1All.shape[2]
     ani = animation.FuncAnimation(fig, update, frames=num_frames, interval=50, blit=False)
-    # plt.show()
-    if save_file:
-        # Save the animation as an MP4 file
-        Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=20, metadata=dict(artist='Strain Analysis'), bitrate=1800)
-        ani.save(output_filename, writer=writer)
 
+    if save_file:
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=20, metadata=dict(artist='Strain Animation'), bitrate=1800)
+        ani.save(output_filename, writer=writer)
         print(f"Animation saved as {output_filename}")
 
-    # Return the animation object for inline display in Jupyter Notebook
+    plt.close(fig)  # Prevent double rendering in Jupyter
     return ani
+
 
 
 ###################################################################################################
@@ -813,65 +906,97 @@ def animate_deformed_mri(MaskHT0, FrameDisplX, FrameDisplY, output_filename="def
     return ani
 
 
-def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output_filename="deformed_mri.mp4", save_file=False, save_mode=False, patinet_file_name="",json_mode=False):
+def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, 
+                                output_filename="deformed_mri.mp4", save_file=False
+                                , save_mode= False, json_mode= False, patinet_file_name = ""):
     """
-    Creates an animated visualization of the deformed MRI image over time and saves it as an MP4.
+    Creates an animated visualization of the deformed MRI image over time and 
+    returns both the animation and the deformation data arrays.
 
     Args:
-        MaskHT0 (np.ndarray): Original MRI image (grayscale, shape: [H, W])
-        FrameDisplX (np.ndarray): X-displacement field (shape: [H, W, Frames])
-        FrameDisplY (np.ndarray): Y-displacement field (shape: [H, W, Frames])
+        Image (np.ndarray): Original MRI image (grayscale, shape: [H, W, 1] or [H, W]).
+        MaskHT0 (np.ndarray): Mask image (grayscale, shape: [H, W, 1] or [H, W]).
+        FrameDisplX (np.ndarray): X-displacement field (H, W, T).
+        FrameDisplY (np.ndarray): Y-displacement field (H, W, T).
         output_filename (str): Name of the saved MP4 file.
+        save_file (bool): If True, saves the animation to disk.
 
     Returns:
-        ani (FuncAnimation): The animation object for display in Jupyter Notebook.
+        ani (FuncAnimation): The animation object for display.
+        Image_deformed_all (np.ndarray): Deformed images over frames (H, W, T).
+        MaskHT0_deformed_all (np.ndarray): Deformed masks over frames (H, W, T).
+        T3DDispX_masked_all (np.ndarray): Masked displacement X field (H, W, T).
+        T3DDispY_masked_all (np.ndarray): Masked displacement Y field (H, W, T).
     """
 
+
     num_frames = FrameDisplX.shape[2]  # Number of frames in the animation
-    height, width, _ = Image.shape  # Image dimensions
-    
+    height, width = MaskHT0.shape[:2]  # Image dimensions
+
+    # Create a meshgrid for remapping
+    x, y = np.meshgrid(np.arange(width), np.arange(height))
+
+    # Prepare to store all frames
+    Image_deformed_all = np.zeros((height, width, num_frames), dtype=np.float32)
+    MaskHT0_deformed_all = np.zeros((height, width, num_frames), dtype=np.float32)
+    T3DDispX_masked_all = np.zeros((height, width, num_frames), dtype=np.float32)
+    T3DDispY_masked_all = np.zeros((height, width, num_frames), dtype=np.float32)
+    MaskFadedDefrmd_all = np.zeros((height, width, num_frames), dtype=np.float32)
+
     # Set up the figure for animation
     fig, ax = plt.subplots(figsize=(6, 6))
     im = ax.imshow(Image, cmap="gray", animated=True)
     ax.set_title("Deformed MRI Image Over Time")
     ax.axis("off")
-    MaskHT0_deformed = MaskHT0.copy()
+
+    #MaskHT0_deformed = MaskHT0
     # Update function for animation
     def update(frame):
-        nonlocal MaskHT0, MaskHT0_deformed, patinet_file_name
-        # nonlocal Image_deformed
-
-
-        Image_deformed = Image.copy()
+        nonlocal patinet_file_name
         # Compute displacement (negate to match MATLAB)
         T3DDispX = -FrameDisplX[:, :, frame].astype(np.float64)
         T3DDispY = -FrameDisplY[:, :, frame].astype(np.float64)
-        MaskHT0_deformed = MaskHT0_deformed[..., 0].astype(np.float64) / 255
-        dilated_MaskHT0 = dilate_mask(MaskHT0_deformed)
-        
-        T3DDispX_masked = (T3DDispX * dilated_MaskHT0)
-        T3DDispY_masked = (T3DDispY * dilated_MaskHT0)
-        
 
-        displacementX_save = T3DDispX_masked
-        displacementY_save = T3DDispY_masked
-        frame1 = Image_deformed
-        # Compute new coordinates
-        x, y = np.meshgrid(np.arange(width), np.arange(height))
-        x_new_masked = (x + T3DDispX_masked).astype(np.float32)
-        y_new_masked = (y + T3DDispY_masked).astype(np.float32)
+        # Normalize the mask
+        Mask_norm = MaskHT0.astype(np.float64)
+        if Mask_norm.ndim == 3:
+            Mask_norm = Mask_norm[..., 0]
+        Mask_norm /= 255.0
+
+        #MaskHT0_deformed = MaskHT0_deformed[...,0].astype(np.float64)/255
+        #dilated_MaskHT0 = dilate_mask(Mask_norm)
         # Compute new coordinates
         x_new = (x + T3DDispX).astype(np.float32)
         y_new = (y + T3DDispY).astype(np.float32)
+        MaskHT0_deformed = cv2.remap(Mask_norm, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)        
+        dilated_MaskHT0 = dilate_mask_fade(MaskHT0_deformed, decay_distance=20, binary_closing_size=15, grey_closing_size=5)
+        #dilated_MaskHT0 = dilate_mask(MaskHT0_deformed)
+        #dilated_MaskHT0=dilate_mask_fade_cosine(MaskHT0_deformed)
+        #dilated_MaskHT0=dilate_mask_fade_smooth(MaskHT0_deformed)
+        
+
+        T3DDispX_masked = T3DDispX * dilated_MaskHT0
+        T3DDispY_masked = T3DDispY * dilated_MaskHT0
+        
+        # Compute new coordinates
+        x_new_masked = (x + T3DDispX_masked).astype(np.float32)
+        y_new_masked = (y + T3DDispY_masked).astype(np.float32)
 
         # Apply remap to warp the image
-        Image_deformed = cv2.remap(Image_deformed, x_new_masked, y_new_masked, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
-        MaskHT0_deformed = cv2.remap(MaskHT0, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)        
+        Image_deformed = cv2.remap(Image, x_new_masked, y_new_masked, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
         
-        frame2 = Image_deformed
+        # Store the frames
+        Image_deformed_all[:, :, int(frame)] = Image_deformed
+        MaskHT0_deformed_all[:, :, int(frame)] = MaskHT0_deformed
+        T3DDispX_masked_all[:, :, int(frame)] = T3DDispX_masked
+        T3DDispY_masked_all[:, :, int(frame)] = T3DDispY_masked
+        MaskFadedDefrmd_all[:, :, int(frame)] = dilated_MaskHT0
 
-        
         if save_mode:
+            frame1 = Image
+            frame2 = Image_deformed
+            displacementX_save = T3DDispX_masked
+            displacementY_save = T3DDispY_masked
             if np.random.rand() > 0.5:
                 base_name = os.path.basename(patinet_file_name)
                 patinet_file_name = os.path.splitext(base_name)[0]
@@ -908,6 +1033,10 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output
                 else:
                     print(f"Skipped saving: One or more files already exist for {suffix}")
 
+
+        
+
+
         # Update the animation frame
         im.set_array(Image_deformed)
         return im
@@ -918,14 +1047,19 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, output
     # plt.show()
     # Save the animation as an MP4 file
     if save_file:
-        # Writer = animation.writers['ffmpeg']
-        # writer = Writer(fps=30, metadata=dict(artist='MRI Deformation'), bitrate=1800)
-        # ani.save(output_filename, writer=writer)
-        ani.save(output_filename)
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=20, metadata=dict(artist='MRI Deformation'), bitrate=1800)
+        ani.save(output_filename, writer=writer)
+
         print(f"Animation saved as {output_filename}")
 
     # Return the animation object for inline display in Jupyter Notebook
-    return ani
+    plt.close(fig)  # prevent double Jupyter display
+
+    return ani, Image_deformed_all, MaskHT0_deformed_all, T3DDispX_masked_all, T3DDispY_masked_all, MaskFadedDefrmd_all, Image_deformed_all_before
+    #return ani
+
+
 
 def generate_radial_logistic_label_from_shifted_grids(xMat_shft, yMat_shft, steepness=10, cutoff=0.3):
     """
@@ -946,4 +1080,125 @@ def generate_radial_logistic_label_from_shifted_grids(xMat_shft, yMat_shft, stee
     label = 1 / (1 + np.exp(-steepness * (R_norm - cutoff)))
     return label
 
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from IPython.display import HTML
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from IPython.display import HTML
+
+def animate_deformation_cines(
+    Image_deformed_all, Mask_deformed_all, 
+    T3DDispX_masked_all, T3DDispY_masked_all,
+    Ep1All_dilated_mask, Ep2All_dilated_mask, Ep3All_dilated_mask, MaskFadedDefrmd_all,
+    strain_peak_neg=-0.4, strain_peak_pos=0.4,
+    output_filename="deformation_cines.mp4",
+    save_file=True
+):
+    """
+    Animate deformation and strain maps over time.
+
+    Args:
+        Image_deformed_all, Mask_deformed_all: Deformed MRI and mask cine (H, W, T).
+        T3DDispX_masked_all, T3DDispY_masked_all: Masked displacement fields (H, W, T).
+        Ep1All_dilated_mask, Ep2All_dilated_mask, Ep3All_dilated_mask: Strain fields (H, W, T).
+        strain_peak_neg, strain_peak_pos: Color limits for strain maps.
+        output_filename: Filename for MP4 output.
+        save_file: Whether to save the animation to disk.
+
+    Returns:
+        ani (FuncAnimation): The animation object for display.
+    """
+
+    num_frames = Image_deformed_all.shape[2]
+
+    # Set up the figure: 2 rows, 4 columns
+    fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+    axes = axes.flatten()  # Make it 1D for easy indexing
+
+    # Titles
+    titles = [
+        "Deformed MRI Image",
+        "Deformed Mask",
+        "Masked X Displacement",
+        "Masked Y Displacement",
+        r"Strain $\varepsilon_1$",
+        r"Strain $\varepsilon_2$",
+        r"Strain $\varepsilon_3$",
+        "Fading Binary Mask"  # Last subplot empty
+    ]
+
+    # Cines to animate
+    cines = [
+        Image_deformed_all,
+        Mask_deformed_all,
+        T3DDispX_masked_all,
+        T3DDispY_masked_all,
+        Ep1All_dilated_mask,
+        Ep2All_dilated_mask,
+        Ep3All_dilated_mask,
+        MaskFadedDefrmd_all  # Placeholder for empty plot
+    ]
+
+    # Calculate vmin and vmax separately
+    vmin_list = [
+        np.min(Image_deformed_all),
+        np.min(Mask_deformed_all),
+        np.min(T3DDispX_masked_all),
+        np.min(T3DDispY_masked_all),
+        strain_peak_neg,
+        strain_peak_neg,
+        strain_peak_neg,
+        np.min(MaskFadedDefrmd_all)  # Fading mask
+    ]
+    vmax_list = [
+        np.max(Image_deformed_all),
+        np.max(Mask_deformed_all),
+        np.max(T3DDispX_masked_all),
+        np.max(T3DDispY_masked_all),
+        strain_peak_pos,
+        strain_peak_pos,
+        strain_peak_pos,
+        np.max(MaskFadedDefrmd_all)  # Fading mask
+    ]
+
+    # Initialize images
+    ims = []
+    colorbars = []
+
+    for i, ax in enumerate(axes):
+        if cines[i] is not None:
+            cmap = 'gray' if i in [0, 1] else 'coolwarm'
+            im = ax.imshow(cines[i][:, :, 0], cmap=cmap, origin='lower',
+                           vmin=vmin_list[i], vmax=vmax_list[i], animated=True)
+            ax.set_title(titles[i])
+            ax.axis("off")
+            ims.append(im)
+            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            colorbars.append(cbar)
+        else:
+            ax.axis("off")  # Hide the last empty subplot
+
+    # Update function for animation
+    def update(frame):
+        idx = 0
+        for i in range(len(cines)):
+            if cines[i] is not None:
+                ims[idx].set_array(cines[i][:, :, frame])
+                idx += 1
+        return ims
+
+    ani = animation.FuncAnimation(fig, update, frames=num_frames, interval=50, blit=False)
+
+    if save_file:
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=20, metadata=dict(artist='MRI Deformation'), bitrate=1800)
+        ani.save(output_filename, writer=writer)
+        print(f"Animation saved as {output_filename}")
+
+    plt.close(fig)
+
+    return ani
 

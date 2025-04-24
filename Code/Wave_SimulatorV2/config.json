@@ -20,7 +20,7 @@
 
   "generator": {
     "folder": "train_numpy",
-    "DATASET_SIZE": 2000,
+    "DATASET_SIZE": 20,
     "patients_start": 50,
     "patients_end": 100
   }
