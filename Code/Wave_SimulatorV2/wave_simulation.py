@@ -1056,7 +1056,7 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY,
     # Return the animation object for inline display in Jupyter Notebook
     plt.close(fig)  # prevent double Jupyter display
 
-    return ani, Image_deformed_all, MaskHT0_deformed_all, T3DDispX_masked_all, T3DDispY_masked_all, MaskFadedDefrmd_all, Image_deformed_all_before
+    return ani, Image_deformed_all, MaskHT0_deformed_all, T3DDispX_masked_all, T3DDispY_masked_all, MaskFadedDefrmd_all
     #return ani
 
 

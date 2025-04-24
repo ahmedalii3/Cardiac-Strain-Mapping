@@ -270,7 +270,7 @@ def main():
                         Mask = Mask[:, :, 0]
 
                     ani, Image_deformed_all, Mask_deformed_all, T3DDispX_masked_all, T3DDispY_masked_all, MaskFadedDefrmd_all = animate_deformed_masked_mri(
-                    Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, save_file=True, save_mode=True, json_mode=False, patinet_file_name= npy_file
+                    Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, save_file=True, save_mode=True, json_mode=True, patinet_file_name= npy_file
                     )
 
                     
