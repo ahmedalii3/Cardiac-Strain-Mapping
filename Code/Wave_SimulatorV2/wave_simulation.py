@@ -4,8 +4,15 @@ from dataclasses import dataclass, field
 import random
 from scipy.ndimage import gaussian_filter
 from helper import dilate_mask, dilate_mask_fade, dilate_mask_fade_cosine, dilate_mask_fade_smooth, save_if_not_exists, save_json_array
+import shutil
 import matplotlib as mpl
-mpl.rcParams['animation.ffmpeg_path'] = '/opt/homebrew/bin/ffmpeg'
+
+
+ffmpeg_path = shutil.which('ffmpeg')
+if ffmpeg_path:
+    mpl.rcParams['animation.ffmpeg_path'] = ffmpeg_path
+else:
+    raise EnvironmentError("ffmpeg not found in PATH. Please install ffmpeg.")
 
 import matplotlib.animation as animation
 animation.writers['ffmpeg'] 

@@ -1,7 +1,7 @@
 {
   "wind_dir": 40,
   "wind_speed": 150,
-  "num_frames": 60,
+  "num_frames": 60, // number of frames for cine(range) -  # of cines
   "FOV": 512,
   "sizeImage": 512,
 
