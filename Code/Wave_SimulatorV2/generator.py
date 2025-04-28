@@ -16,6 +16,8 @@ from wave_simulation import (
 )
 import json
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
+sizeImage = 512
+FOV = 512
 
 class ConfigLoader:
     def __init__(self, config_path):
@@ -33,15 +35,12 @@ class ConfigLoader:
                 'wind_dir': self.config["wind_dir"],
                 'wind_speed': self.config["wind_speed"],
                 'num_frames': int(np.random.uniform(self.config["num_frames"][0], self.config["num_frames"][1])),
-                'FOV': self.config["FOV"],
-                'sizeImage': self.config["sizeImage"],
-                'steepness': self.config["radial_logistic"]["steepness"],
-                'cutoff': self.config["radial_logistic"]["cutoff"],
-                'StrainEpPeak': self.config["strain_validation"]["StrainEpPeak"],
-                'max_iterations': self.config["strain_validation"]["max_iterations"],
-                'inner_radius': self.config["strain_validation"]["inner_radius"],
-                'outer_radius': self.config["strain_validation"]["outer_radius"],
-                'strain_tolerance': self.config["strain_validation"]["strain_tolerance"],
+                'FOV': FOV,
+                'sizeImage': sizeImage,            
+                'StrainEpPeak': self.config["strain_validation"]["StrainEpPeak"],                
+                'inner_radius': int(np.random.uniform(self.config["strain_validation"]["inner_radius"][0], self.config["strain_validation"]["inner_radius"][1])),
+                'outer_radius': int(np.random.uniform(self.config["strain_validation"]["outer_radius"][0], self.config["strain_validation"]["outer_radius"][1])),
+                
             }
         else:
             return {
@@ -186,7 +185,7 @@ class PolarConverter:
         ud_y = ud_r_scaled * np.sin(Theta[:, :, frame]) + ud_theta_scaled * np.cos(Theta[:, :, frame])
         
         label_map = generate_radial_logistic_label_from_shifted_grids(
-            xMat_shft, yMat_shft, steepness=self.params['steepness'], cutoff=self.params['cutoff']
+            xMat_shft, yMat_shft, steepness=50, cutoff=0.04
         )
         
         label_map_3d = np.repeat(label_map[:, :, np.newaxis], self.params['num_frames'], axis=2)
@@ -241,7 +240,7 @@ def main():
                     
                     FrameDisplX_Org_adjusted, FrameDisplY_Org_adjusted, Ep1All, Ep2All, Ep3All, strain_history = adjust_displacement_for_strain(
                         FrameDisplX_Org_adjusted, FrameDisplY_Org_adjusted, deltaX, deltaY, params['StrainEpPeak'],
-                        strain_tolerance=params['strain_tolerance'], max_iterations=params['max_iterations']
+                        strain_tolerance=0.01, max_iterations=20
                     )
                     
                     polar_converter = PolarConverter(params, Mask)
@@ -260,7 +259,7 @@ def main():
                     FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, Ep1All, Ep2All, Ep3All, strain_history = adjust_displacement_with_ring(
                         FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, deltaX, deltaY, params['StrainEpPeak'],
                         xMat_shft, yMat_shft, inner_radius=params['inner_radius'], outer_radius=params['outer_radius'],
-                        strain_tolerance=params['strain_tolerance'], max_iterations=params['max_iterations']
+                        strain_tolerance=0.01, max_iterations=20
                     )
                     
                     # Ensure Image and MaskHT0 are 2D (remove fake RGB dimension if present)
@@ -273,7 +272,7 @@ def main():
                     
 
                     ani, Image_deformed_all, Mask_deformed_all, T3DDispX_masked_all, T3DDispY_masked_all, MaskFadedDefrmd_all = animate_deformed_masked_mri(
-                    Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, save_file=True, save_mode=True, patinet_file_name= npy_file
+                    Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, save_file=True, save_mode=True, patinet_file_name= npy_file, output_filename=f"cine_patient{patient_number}_frame{frame_number}_slice_{slice_number}_ACDC.mp4",
                     )
                     Ep1All_dilated_mask, Ep2All_dilated_mask, Ep3All_dilated_mask = compute_strains(T3DDispX_masked_all, T3DDispY_masked_all, deltaX, deltaY)
 
@@ -291,14 +290,10 @@ def main():
                         "wind_dir_x": simulation_results['wind_dir_x'],
                         "wind_dir_y": simulation_results['wind_dir_y'],
                         "wind_speed_x": simulation_results['wind_speed_x'],
-                        "wind_speed_y": simulation_results['wind_speed_y'],
-                        # "steepness": params['steepness'],
-                        # "cutoff": params['cutoff'],
-                        # "StrainEpPeak": params['StrainEpPeak'],
-                        # "max_iterations": params['max_iterations'],
-                        # "inner_radius": params['inner_radius'],
-                        # "outer_radius": params['outer_radius'],
-                        # "strain_tolerance": params['strain_tolerance'],
+                        "wind_speed_y": simulation_results['wind_speed_y'],                    
+                        "StrainEpPeak": params['StrainEpPeak'],
+                        "inner_radius": params['inner_radius'],
+                        "outer_radius": params['outer_radius'],                        
                         "no_of_frames": params['num_frames'],
                     })
 

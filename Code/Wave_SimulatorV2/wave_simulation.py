@@ -1053,6 +1053,7 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY,
     if save_file:
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=20, metadata=dict(artist='MRI Deformation'), bitrate=1800)
+        output_filename = f"generatedData/Cines/{output_filename}"
         ani.save(output_filename, writer=writer)
 
         print(f"Animation saved as {output_filename}")
