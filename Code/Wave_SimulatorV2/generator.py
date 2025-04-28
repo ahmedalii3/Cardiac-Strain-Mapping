@@ -11,7 +11,8 @@ from wave_simulation import (
     adjust_displacement_for_strain, 
     generate_radial_logistic_label_from_shifted_grids, 
     adjust_displacement_with_ring, 
-    animate_deformed_masked_mri
+    animate_deformed_masked_mri,
+    compute_strains
 )
 import json
 os.chdir(os.path.dirname(__file__)) #change working directory to current directory
@@ -26,36 +27,46 @@ class ConfigLoader:
             return json.load(file)
             
     def get_parameters(self):
-        return {
-            'wind_dir': self.config["wind_dir"],
-            'wind_speed': self.config["wind_speed"],
-            'num_frames': self.config["num_frames"],
-            'FOV': self.config["FOV"],
-            'sizeImage': self.config["sizeImage"],
-            'steepness': self.config["radial_logistic"]["steepness"],
-            'cutoff': self.config["radial_logistic"]["cutoff"],
-            'StrainEpPeak': self.config["strain_validation"]["StrainEpPeak"],
-            'max_iterations': self.config["strain_validation"]["max_iterations"],
-            'inner_radius': self.config["strain_validation"]["inner_radius"],
-            'outer_radius': self.config["strain_validation"]["outer_radius"],
-            'strain_tolerance': self.config["strain_validation"]["strain_tolerance"],
-            'DATASET_SIZE': self.config["generator"]["DATASET_SIZE"],
-            'patinet_start': self.config["generator"]["patients_start"],
-            'patinet_end': self.config["generator"]["patients_end"],
-            'folder': self.config["generator"]["folder"]
-        }
+        # if config path has "parameters" in it, load the parameters from the config file
+        if "parameters" in self.config_path:
+            return {
+                'wind_dir': self.config["wind_dir"],
+                'wind_speed': self.config["wind_speed"],
+                'num_frames': int(np.random.uniform(self.config["num_frames"][0], self.config["num_frames"][1])),
+                'FOV': self.config["FOV"],
+                'sizeImage': self.config["sizeImage"],
+                'steepness': self.config["radial_logistic"]["steepness"],
+                'cutoff': self.config["radial_logistic"]["cutoff"],
+                'StrainEpPeak': self.config["strain_validation"]["StrainEpPeak"],
+                'max_iterations': self.config["strain_validation"]["max_iterations"],
+                'inner_radius': self.config["strain_validation"]["inner_radius"],
+                'outer_radius': self.config["strain_validation"]["outer_radius"],
+                'strain_tolerance': self.config["strain_validation"]["strain_tolerance"],
+            }
+        else:
+            return {
+                'no_of_cines': self.config["generator"]["no_of_cines"],
+                'patinet_start': self.config["generator"]["patients_start"],
+                'patinet_end': self.config["generator"]["patients_end"],
+                'folder': self.config["generator"]["folder"],
+            }
 
 class DirectoryManager:
-    def __init__(self):
+    def __init__(self, data_path=None):
         self.current_script = Path(__file__)
         self.project_root = self.current_script.parent.parent.parent
-        self.data_dir = self.project_root / "Data" / "ACDC"
+        if data_path:
+            self.data_dir = Path(data_path)
+        else:
+            self.data_dir = self.project_root / "Data" / "ACDC" / "train_numpy"
         self.saved_displacements = self.current_script.parent / "generatedData" / "Displacements"
         self.saved_frames = self.current_script.parent / "generatedData" / "Frames"
+        self.saved_cines = self.current_script.parent / "generatedData" / "Cines"
+        self.setup_directories()
         
-    def setup_directories(self, folder):
-        self.data_dir = self.data_dir / folder
-        for directory in [self.saved_displacements, self.saved_frames]:
+    def setup_directories(self):
+        # self.data_dir = self.data_dir / folder
+        for directory in [self.saved_displacements, self.saved_frames, self.saved_cines]:
             directory.mkdir(parents=True, exist_ok=True)
         os.chdir(os.path.dirname(__file__))
         
@@ -71,20 +82,7 @@ class WaveSimulator:
         self.params = params
         
     def simulate_phillips_spectrum(self):
-        params = StrainWaveParams(
-            wind_dir_vector=(np.cos(np.radians(self.params['wind_dir'])), 
-                           np.sin(np.radians(self.params['wind_dir']))),
-            wind_speed=self.params['wind_speed']
-        )
-        H0, W, Grid_Sign = initialize_wave(params)
-        
-        mesh_lim = np.pi * params.meshsize / params.patchsize
-        N = np.linspace(-mesh_lim, mesh_lim, params.meshsize)
-        M = np.linspace(-mesh_lim, mesh_lim, params.meshsize)
-        Kx, Ky = np.meshgrid(N, M)
-        P = phillips_spectrum(Kx, Ky, params.wind_dir_vector, params.wind_speed, 
-                            params.A, params.g)
-        return run_wave_simulation(num_frames=self.params['num_frames'])
+        return run_wave_simulation(self.params) #insert random ranges for wind and speed
 
     def scale_displacements(self, simulation_results):
         deltaX = self.params['FOV'] / self.params['sizeImage']
@@ -203,19 +201,22 @@ class PolarConverter:
         return FrameDisplXOrgAdjPlr, FrameDisplYOrgAdjPlr, xMat_shft, yMat_shft
 
 def main():
-    config_loader = ConfigLoader("../Wave_SimulatorV2/config.json")
-    params = config_loader.get_parameters()
+    config_parameter_loader = ConfigLoader("../Wave_SimulatorV2/config_parameters.json")
+    config_generator_loader = ConfigLoader("../Wave_SimulatorV2/config_generator.json")
+    generator_params = config_generator_loader.get_parameters()
     
-    dir_manager = DirectoryManager()
-    dir_manager.setup_directories(params['folder'])
     
-    size = 0
+    dir_manager = DirectoryManager(generator_params['folder'])
+    
+    
     processed_combinations = set()
-    wave_simulator = WaveSimulator(params)
+    
     strain_calculator = StrainCalculator()
     
-    while size < params['DATASET_SIZE']:
-        patient_number = str(np.random.randint(params['patinet_start'], params['patinet_end'])).zfill(3)
+    for _ in range(generator_params['no_of_cines']):
+        params = config_parameter_loader.get_parameters()
+        wave_simulator = WaveSimulator(params)
+        patient_number = str(np.random.randint(generator_params['patinet_start'], generator_params['patinet_end'])).zfill(3)
         slice_number = np.random.randint(1, 6)
         for frame_number in range(1, 31):
             frame_number = str(frame_number).zfill(2)
@@ -269,17 +270,46 @@ def main():
                     if Mask.ndim == 3 and Mask.shape[2] == 3:
                         Mask = Mask[:, :, 0]
 
+                    
+
                     ani, Image_deformed_all, Mask_deformed_all, T3DDispX_masked_all, T3DDispY_masked_all, MaskFadedDefrmd_all = animate_deformed_masked_mri(
-                    Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, save_file=True, save_mode=True, json_mode=True, patinet_file_name= npy_file
+                    Image, Mask, FrameDisplXOrgAdjPlrAdj, FrameDisplYOrgAdjPlrAdj, save_file=True, save_mode=True, patinet_file_name= npy_file
                     )
+                    Ep1All_dilated_mask, Ep2All_dilated_mask, Ep3All_dilated_mask = compute_strains(T3DDispX_masked_all, T3DDispY_masked_all, deltaX, deltaY)
+
+                    # Save the cine results as a .npy file
+                    cine_file_name = dir_manager.saved_cines / f"cine_patient{patient_number}_frame{frame_number}_slice_{slice_number}_ACDC.npy" # change acdc to the dataset name
+                    np.save(cine_file_name, {
+                        "Image": Image_deformed_all,
+                        "Mask": Mask_deformed_all,
+                        "T3DDispX_masked": T3DDispX_masked_all,
+                        "T3DDispY_masked": T3DDispY_masked_all,
+                        "MaskFadedDefrmd": MaskFadedDefrmd_all,
+                        "Ep1All_dilated_mask": Ep1All_dilated_mask,
+                        "Ep2All_dilated_mask": Ep2All_dilated_mask,
+                        "Ep3All_dilated_mask": Ep3All_dilated_mask,
+                        "wind_dir_x": simulation_results['wind_dir_x'],
+                        "wind_dir_y": simulation_results['wind_dir_y'],
+                        "wind_speed_x": simulation_results['wind_speed_x'],
+                        "wind_speed_y": simulation_results['wind_speed_y'],
+                        # "steepness": params['steepness'],
+                        # "cutoff": params['cutoff'],
+                        # "StrainEpPeak": params['StrainEpPeak'],
+                        # "max_iterations": params['max_iterations'],
+                        # "inner_radius": params['inner_radius'],
+                        # "outer_radius": params['outer_radius'],
+                        # "strain_tolerance": params['strain_tolerance'],
+                        "no_of_frames": params['num_frames'],
+                    })
+
 
                     
-                    file_count = len([f for f in dir_manager.saved_displacements.glob('*') 
-                                    if f.is_file() and f.name != ".DS_Store"])
-                    size = file_count
-                    print(f"Size: {size}")
+                    # file_count = len([f for f in dir_manager.saved_displacements.glob('*') 
+                    #                 if f.is_file() and f.name != ".DS_Store"])
+                    # size = file_count
+                    break # break from frames loop
     
-    print("All done!")
+    print(f"Generated {generator_params['no_of_cines']} cines from patient number {generator_params['patinet_start']} to patient number {generator_params['patinet_end']} in folder {generator_params['folder']}")
 
 if __name__ == "__main__":
     main()

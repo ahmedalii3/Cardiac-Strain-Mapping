@@ -1,7 +1,7 @@
 {
-  "wind_dir": 40,
-  "wind_speed": 150,
-  "num_frames": 60, // number of frames for cine(range) -  # of cines
+  "wind_dir": [0, 360],
+  "wind_speed": [20, 100],
+  "num_frames": [30, 60],
   "FOV": 512,
   "sizeImage": 512,
 
@@ -16,12 +16,5 @@
     "inner_radius": 10,
     "outer_radius": 100,
     "strain_tolerance": 0.01
-  },
-
-  "generator": {
-    "folder": "train_numpy",
-    "DATASET_SIZE": 20,
-    "patients_start": 50,
-    "patients_end": 100
   }
 }

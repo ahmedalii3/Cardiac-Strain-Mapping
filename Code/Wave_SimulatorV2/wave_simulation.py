@@ -241,7 +241,7 @@ def compute_displacement_frames(param_x, param_y, num_frames, max_displ_x, max_d
 ###################################################################################################
 ###################################################################################################
 ###################################################################################################
-def run_wave_simulation(num_frames=30):
+def run_wave_simulation(params):
     """
     Runs the full wave simulation, including displacement computation,
     optional Gaussian shape testing, and inversion of displacement direction.
@@ -253,11 +253,16 @@ def run_wave_simulation(num_frames=30):
         dict: Dictionary containing displacement frames for X and Y.
     """
     # Initialize simulation settings
-    wind_dir_x = np.random.uniform(0, 360)  # Random wind direction for X
-    wind_dir_y = np.random.uniform(0, 360)  # Random wind direction for Y
+    wind_dir_range_start = params['wind_dir'][0]
+    wind_dir_range_end = params['wind_dir'][1]
+    wind_dir_x = np.random.uniform(wind_dir_range_start, wind_dir_range_end)  # Random wind direction for X
+    wind_dir_y = np.random.uniform(wind_dir_range_start, wind_dir_range_end)  # Random wind direction for Y
     
-    wind_speed_x = np.random.uniform(20, 100)  # Random wind speed for X
-    wind_speed_y = np.random.uniform(20, 100)  # Random wind speed for Y
+    wind_speed_range_start = params['wind_speed'][0]
+    wind_speed_range_end = params['wind_speed'][1]
+    wind_speed_x = np.random.uniform(wind_speed_range_start, wind_speed_range_end)  # Random wind speed for X
+    wind_speed_y = np.random.uniform(wind_speed_range_start, wind_speed_range_end)  # Random wind speed for Y
+
 
     # Convert wind directions to unit vectors
     # Convert wind direction to unit vector (cosine and sine of the angle)
@@ -271,9 +276,10 @@ def run_wave_simulation(num_frames=30):
     max_displ_x = 10
     max_displ_y = 10
 
-      # Generate a random interaction factor between 0.1 and 0.5
+    # Generate a random interaction factor between 0.1 and 0.5
     interaction_factor = np.random.uniform(0.05, 0.2)
     # Compute wave displacement frames for X and Y directions
+    num_frames = params['num_frames']
     FrameDisplX, FrameDisplY = compute_displacement_frames(params_x, params_y, num_frames, max_displ_x, max_displ_y,interaction_factor)
 
     # Invert displacement for Y-direction (as per MATLAB code)
@@ -915,7 +921,7 @@ def animate_deformed_mri(MaskHT0, FrameDisplX, FrameDisplY, output_filename="def
 
 def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY, 
                                 output_filename="deformed_mri.mp4", save_file=False
-                                , save_mode= False, json_mode= False, patinet_file_name = ""):
+                                , save_mode= False, patinet_file_name = ""):
     """
     Creates an animated visualization of the deformed MRI image over time and 
     returns both the animation and the deformation data arrays.
@@ -1004,41 +1010,32 @@ def animate_deformed_masked_mri(Image, MaskHT0, FrameDisplX, FrameDisplY,
             frame2 = Image_deformed
             displacementX_save = T3DDispX_masked
             displacementY_save = T3DDispY_masked
-            if np.random.rand() > 0.5:
-                base_name = os.path.basename(patinet_file_name)
-                patinet_file_name = os.path.splitext(base_name)[0]
-                suffix = f"{patinet_file_name}_#{frame}"
+            
+            base_name = os.path.basename(patinet_file_name)
+            patinet_file_name = os.path.splitext(base_name)[0]
+            suffix = f"{patinet_file_name}_#{frame}"
 
-                # Construct paths
-                frame1_path = f"generatedData/Frames/{suffix}_1"
-                frame2_path = f"generatedData/Frames/{suffix}_2"
-                disp_x_path = f"generatedData/Displacements/{suffix}_x"
-                disp_y_path = f"generatedData/Displacements/{suffix}_y"
+            # Construct paths
+            frame1_path = f"generatedData/Frames/{suffix}_1"
+            frame2_path = f"generatedData/Frames/{suffix}_2"
+            disp_x_path = f"generatedData/Displacements/{suffix}_x"
+            disp_y_path = f"generatedData/Displacements/{suffix}_y"
 
-                ext = ".json" if json_mode else ".npy"
-                frame1_file = frame1_path + ext
-                frame2_file = frame2_path + ext
-                disp_x_file = disp_x_path + ext
-                disp_y_file = disp_y_path + ext
+            ext = ".npy"
+            frame1_file = frame1_path + ext
+            frame2_file = frame2_path + ext
+            disp_x_file = disp_x_path + ext
+            disp_y_file = disp_y_path + ext
 
-                paths = [frame1_file, frame2_file, disp_x_file, disp_y_file]
+            paths = [frame1_file, frame2_file, disp_x_file, disp_y_file]
 
-                if save_if_not_exists(paths):
-                    os.makedirs("generatedData/Frames", exist_ok=True)
-                    os.makedirs("generatedData/Displacements", exist_ok=True)
-
-                    if json_mode:
-                        save_json_array(frame1, frame1_file)
-                        save_json_array(frame2, frame2_file)
-                        save_json_array(displacementX_save, disp_x_file)
-                        save_json_array(displacementY_save, disp_y_file)
-                    else:
-                        np.save(frame1_path, frame1)
-                        np.save(frame2_path, frame2)
-                        np.save(disp_x_path, displacementX_save)
-                        np.save(disp_y_path, displacementY_save)
-                else:
-                    print(f"Skipped saving: One or more files already exist for {suffix}")
+            if save_if_not_exists(paths):
+                np.save(frame1_path, frame1)
+                np.save(frame2_path, frame2)
+                np.save(disp_x_path, displacementX_save)
+                np.save(disp_y_path, displacementY_save)
+            else:
+                print(f"Skipped saving: One or more files already exist for {suffix}")
 
 
         
