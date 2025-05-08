@@ -1,0 +1,8 @@
+{
+  "generator": {
+    "folder": "/Users/osama/GP-2025-Strain/Data/ACDC/train_numpy",
+    "no_of_cines": 1,
+    "patients_start": 1,
+    "patients_end": 100
+  }
+}
