@@ -8,14 +8,14 @@ Code/Segmentation/cine_Segmenation/Datasets
 Code/Segmentation/cardiac_cine_mri_segmentation
 Code/Segmentation/ACDC
 /Data
-/Code/ventricular_short_axis_3label/configs
-/Code/ventricular_short_axis_3label/models
-/Code/ventricular_short_axis_3label/tensorflow_env
-! Code/ventricular_short_axis_3label/docs
+Code/Localization and Segmentation/Localize Using MONAI/configs
+Code/Localization and Segmentation/Localize Using MONAI/models
+Code/Localization and Segmentation/Localize Using MONAI/tensorflow_env
+! Code/Localization and Segmentation/Localize Using MONAI/docs
 Code/Wave/Saved
 Code/Wave/Saved_test
 Code/Wave/trash
-Code/Segment/nnUNetFrame/dataset/nnUNet_trained_models
+Code/Localization and Segmentation/Segment Using nnUnet/nnUNetFrame/dataset/nnUNet_trained_models
 Code/Wave_SimulatorV2/Dr_Reference_code/heart_cine_simulateV2.ipynb
 Code/Wave_SimulatorV2/Dr_Reference_code/wave_simulation.ipynb
 Code/Wave_SimulatorV2/drafts/heart_cine_simulate.ipynb
@@ -25,10 +25,11 @@ Code/Wave_SimulatorV2/generatedData
 Code/Archive/patient5
 Code/Archive/predicted5
 Code/Archive/predicted55
-Code/FrameWork/Loaded_data
+Code/Supervised Framework/Loaded_data
 Code/Wave_SimulatorV2/Dr_Reference_code/V3/heart_cine_simulate.ipynb
 Code/Wave_SimulatorV2/generatedData_1
 Best_models
 Results_Supervised
 Code/Archive/patient5dicom
 Code/Archive/strain5
+Code/Supervised Framework/real_test_data
