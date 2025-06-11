@@ -237,28 +237,7 @@ class Automate_Training():
 
         self.y_train = displacement_array[:train_index]
         self.y_valid = displacement_array[train_index:valid_index]
-        self.y_test = displacement_array[valid_index:]
-
-        # plt.imshow(self.y_train[0,...,2], cmap='jet')
-        # plt.title("Mask")
-        # plt.colorbar()
-        # plt.show()
-        # save directory 
-        # save_dir = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/Loaded_data"
-        # np.save(os.path.join(save_dir, "fixed_images_train.npy"), self.fixed_images_train)
-        # np.save(os.path.join(save_dir, "fixed_images_valid.npy"), self.fixed_images_valid)
-        # np.save(os.path.join(save_dir, "fixed_images_test.npy"), self.fixed_images_test)
-        # np.save(os.path.join(save_dir, "moving_images_train.npy"), self.moving_images_train)
-
-        # np.save(os.path.join(save_dir, "moving_images_valid.npy"), self.moving_images_valid)
-        # np.save(os.path.join(save_dir, "moving_images_test.npy"), self.moving_images_test)
-        # np.save(os.path.join(save_dir, "y_train.npy"), self.y_train)
-        # np.save(os.path.join(save_dir, "y_valid.npy"), self.y_valid)
-        # np.save(os.path.join(save_dir, "y_test.npy"), self.y_test)
-
-
-     
-        
+        self.y_test = displacement_array[valid_index:]        
         
         
 
@@ -643,85 +622,7 @@ class Automate_Training():
 
         x_displacement_predicted = predicted_deformation_field[0, :, :, 0]  
         y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
-        # fig, ax = plt.subplots(1, 3, figsize=(10, 5))
-        # ax[0].imshow(real_moving_image, cmap='gray')
-        # ax[0].set_title('Moving Image')
-
-        # ax[1].imshow(real_fixed_image, cmap='gray')
-        # ax[1].set_title('Fixed Image')
-
-        #         # Prepare the meshgrid for arrows
-        # grid_spacing = 5  # adjust for density of arrows
-        # h, w = real_moving_image.shape
-        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
-
-        # # Subsample displacements according to grid spacing
-        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
-
-        # ax[2].imshow(real_moving_image, cmap='gray')
-
-        # # Overlay the displacement vectors (arrows)
-        # ax[2].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
-
-        # ax[2].set_title('Predicted Displacement Field over Moving Image')
-        # ax[2].axis('off')
-
-        # # Save the plot
-        
-        # direction_plot_path = os.path.join(model_folder, f"direction_plot_real_test{model_name}.png")
-        # plt.savefig(direction_plot_path)
-        # plt.close()
-
-        #################################### plot strain over the real data ########################################################
-        # Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
-        # vmin, vmax = np.min(Ep2All), np.max(Ep1All)
-        # fig, ax = plt.subplots(1, 4, figsize=(15, 5))
-
-        # im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider1 = make_axes_locatable(ax[0])
-        # cax1 = divider1.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im1, cax=cax1, shrink=0.8)
-        # ax[0].set_title('Ep1All')
-
-        
-        # im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider2 = make_axes_locatable(ax[1])
-        # cax2 = divider2.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im2, cax=cax2, shrink=0.8)
-        # ax[1].set_title('Ep2All')
-
-        # im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider3 = make_axes_locatable(ax[2])
-        # cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im3, cax=cax3, shrink=0.8)
-        # ax[2].set_title('Ep3All')
-
-        # # Prepare the meshgrid for arrows
-        # grid_spacing = 5  # adjust for density of arrows
-        # h, w = real_moving_image.shape
-        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
-
-        # # Subsample displacements according to grid spacing
-        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
-
-        # ax[3].imshow(real_moving_image, cmap='gray')
-
-        # # Overlay the displacement vectors (arrows)
-        # ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
-
-        # ax[3].set_title('Predicted Displacement Field over Moving Image')
-        # ax[3].axis('off')
-
-
-        # # Save the plot
-
-        # for i in range (3):
-        #     ax[i].axis('off')
-        # strain_plot_path = os.path.join(model_folder, f"strain_plot_real_test{model_name}.png")
-        # plt.savefig(strain_plot_path)
-        # plt.close()
+       
 
         ################################################ plot moving and fixed and warped images real test ############################################
 
@@ -904,70 +805,7 @@ class Automate_Training():
         model_name_train = model_name + "_train" + "with_mask"
         self.create_interactive_plots(data, model_name_train, model_folder)
 
-        ##################################### plot strain over the real data ############################################################
-        # fixed_image = self.fixed_images_train[train_sample]
-        # moving_image = self.moving_images_train[train_sample]
-        # moving_image_try = self.moving_images_train[train_sample]
-        # fixed_image_try = self.fixed_images_train[train_sample]
-        # moving_image_try = tf.expand_dims(moving_image_try, axis=0)
-        # fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
-      
-        # predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
-        # x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
-        # y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
         
-        # Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
-        # vmin, vmax = np.min(Ep2All), np.max(Ep1All)
-        # fig, ax = plt.subplots(1, 4, figsize=(15, 5))
-
-        # im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider1 = make_axes_locatable(ax[0])
-        # cax1 = divider1.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im1, cax=cax1, shrink=0.8)
-        # ax[0].set_title('Ep1All')
-
-        # im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider2 = make_axes_locatable(ax[1])
-        # cax2 = divider2.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im2, cax=cax2, shrink=0.8)
-        # ax[1].set_title('Ep2All')
-
-
-        # im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider3 = make_axes_locatable(ax[2])
-        # cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im3, cax=cax3, shrink=0.8)
-        # ax[2].set_title('Ep3All')
-
-        
-
-        #          # Prepare the meshgrid for arrows
-        # grid_spacing = 5  # adjust for density of arrows
-        # h, w = moving_image.shape
-        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
-
-        # # Subsample displacements according to grid spacing
-        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
-
-        # ax[3].imshow(moving_image, cmap='gray')
-
-        # # Overlay the displacement vectors (arrows)
-        # ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
-
-        # ax[3].set_title('Predicted Displacement Field over MOving Image')
-        # ax[3].axis('off')
-
-        # # Save the plot
-        # ax[3].set_title('Predicted Displacement')
-
-        # for i in range (4):
-        #     ax[i].axis('off')
-
-        # strain_plot_path = os.path.join(model_folder, f"strain_plot_train_simulated{model_name}.png")
-        # plt.savefig(strain_plot_path)
-        # plt.close()
-
 
          ########################################### plot the direction test  ########################################################################
         test_sample = 67
@@ -1086,66 +924,7 @@ class Automate_Training():
         self.create_interactive_plots(data, model_name_test, model_folder)
 
 
-        ############# plot strain over the test data ############
-    
-        # moving_image = self.moving_images_test[test_sample]
-        # moving_image_try = self.moving_images_test[test_sample]
-        # fixed_image_try = self.fixed_images_test[test_sample]
-        # moving_image_try = tf.expand_dims(moving_image_try, axis=0)
-        # fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
-
-        # predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
-        # x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
-        # y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
-    
-        # Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
-        # vmin, vmax = np.min(Ep2All), np.max(Ep1All)
-        # fig, ax = plt.subplots(1, 4, figsize=(15, 5))
-
-        # im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider1 = make_axes_locatable(ax[0])
-        # cax1 = divider1.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im1, cax=cax1, shrink=0.8)
-        # ax[0].set_title('Ep1All')
-
-        # im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider2 = make_axes_locatable(ax[1])
-        # cax2 = divider2.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im2, cax=cax2, shrink=0.8)
-        # ax[1].set_title('Ep2All')
-
-        # im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        # divider3 = make_axes_locatable(ax[2])
-        # cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-        # fig.colorbar(im3, cax=cax3, shrink=0.8)
-        # ax[2].set_title('Ep3All')
-    
-        #          # Prepare the meshgrid for arrows
-        # grid_spacing = 5  # adjust for density of arrows
-        # h, w = moving_image.shape
-        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
-
-        # # Subsample displacements according to grid spacing
-        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
-
-        # ax[3].imshow(moving_image, cmap='gray')
-
-        # # Overlay the displacement vectors (arrows)
-        # ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
-
-        # ax[3].set_title('Predicted Displacement Field over MOving Image')
-        # ax[3].axis('off')
-
-        # # Save the plot
-        # ax[3].set_title('Predicted Displacement')
-
-        # for i in range (4):
-        #     ax[i].axis('off')
-        # strain_plot_path = os.path.join(model_folder, f"strain_plot_test_simulated{model_name}.png")
-        # plt.savefig(strain_plot_path)
-        # plt.close()
-
+        
 
         ############# plot x_displacement over train #############
         moving_image   = self.moving_images_test[test_sample]
@@ -1209,15 +988,6 @@ class Automate_Training():
 
        
     
-
-
-            
-
-            
-            
-            
-
-
 
 
 # main function
