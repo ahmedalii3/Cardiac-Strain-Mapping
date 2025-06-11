@@ -219,8 +219,8 @@ class automate_testing:
         dx, dy, initial_strain_tensor, final_strain_tensor, max_initial_strain, max_strain, min_initial_strain, min_strain = result
 
         # Create a figure with 3 rows and 3 columns
-        fig, axes = plt.subplots(3, 5, figsize=(40, 21), constrained_layout=True)
-        fig.suptitle(f"Sample {sample_idx} Analysis", fontsize=20, y=1.02)
+        fig, axes = plt.subplots(3, 3, figsize=(30, 25), constrained_layout=True)
+        fig.suptitle(f"Sample {sample_idx} Analysis", fontsize=28, y=1.02)
 
         # --- First Row: Core Images ---
         images = [moving, fixed, warped]
@@ -230,7 +230,7 @@ class automate_testing:
 
         for i, (img, title) in enumerate(zip(images, titles)):
             axes[Current_Row, i].imshow(img, cmap='gray')
-            axes[Current_Row, i].set_title(title, fontsize=16)
+            axes[Current_Row, i].set_title(title, fontsize=26)
             axes[Current_Row, i].axis('off')
 
         # Create RGB image: R and G from warped, B from fixed
@@ -244,9 +244,9 @@ class automate_testing:
             fixed_norm        # Blue channel
         ], axis=-1)
 
-        axes[Current_Row, 3].imshow(rgb_wrpd_fxd)
-        axes[Current_Row, 3].set_title("Warped (Red) over Fixed (RGB)", fontsize=20)
-        axes[Current_Row, 3].axis('off')
+        axes[Current_Row+1, 2].imshow(rgb_wrpd_fxd)
+        axes[Current_Row+1, 2].set_title("Warped (Red) over Fixed (RGB)", fontsize=20)
+        axes[Current_Row+1, 2].axis('off')
 
         rgb_mvg_fxd = np.stack([
             moving_norm,      # Red channel
@@ -254,9 +254,9 @@ class automate_testing:
             fixed_norm        # Blue channel
         ], axis=-1)
 
-        axes[Current_Row, 4].imshow(rgb_mvg_fxd)
-        axes[Current_Row, 4].set_title("Moving (Red) over Fixed (RGB)", fontsize=20)
-        axes[Current_Row, 4].axis('off')
+        axes[Current_Row+2, 2].imshow(rgb_mvg_fxd)
+        axes[Current_Row+2, 2].set_title("Moving (Red) over Fixed (RGB)", fontsize=26)
+        axes[Current_Row+2, 2].axis('off')
 
 
         # --- Second Row: Strain Analysis (Heatmaps) ---
@@ -274,19 +274,19 @@ class automate_testing:
 
         for i, (strain_img, title) in enumerate(zip(strain_images, strain_titles)):
             im = axes[Current_Row, i].imshow(strain_img, cmap='jet', vmin=vmin, vmax=vmax)
-            axes[Current_Row, i].set_title(title, fontsize=16)
+            axes[Current_Row, i].set_title(title, fontsize=26)
             axes[Current_Row, i].axis('off')
             self.add_colorbar(fig, axes[Current_Row, i], im, label="Strain (unitless)")
 
         # Warped Difference Image (Use Signed Differences)
-        diff = fixed - warped
-        im6 = axes[Current_Row, 2].imshow(diff, cmap='bwr', vmin=-np.max(np.abs(diff)), vmax=np.max(np.abs(diff)))
-        axes[Current_Row, 2].set_title("Warped Difference", fontsize=16)
-        axes[Current_Row, 2].axis('off')
-        self.add_colorbar(fig, axes[Current_Row, 2], im6, label="Intensity Difference")
+        # diff = fixed - warped
+        # im6 = axes[Current_Row, 2].imshow(diff, cmap='bwr', vmin=-np.max(np.abs(diff)), vmax=np.max(np.abs(diff)))
+        # axes[Current_Row, 2].set_title("Warped Difference", fontsize=16)
+        # axes[Current_Row, 2].axis('off')
+        # self.add_colorbar(fig, axes[Current_Row, 2], im6, label="Intensity Difference")
 
-        axes[Current_Row, 3].axis('off')
-        axes[Current_Row, 4].axis('off')
+        # axes[Current_Row, 3].axis('off')
+        # axes[Current_Row, 4].axis('off')
 
 
 
@@ -299,23 +299,23 @@ class automate_testing:
             axes[Current_Row, i].imshow(fixed, cmap='gray', alpha=0.95)
             # Overlay strain with semi-transparency
             im_overlay = axes[Current_Row, i].imshow(strain_img, cmap='jet', alpha=0.5, vmin=vmin, vmax=vmax)
-            axes[Current_Row, i].set_title(title, fontsize=16)
+            axes[Current_Row, i].set_title(title, fontsize=26)
             axes[Current_Row, i].axis('off')
             self.add_colorbar(fig, axes[Current_Row, i], im_overlay, label="Strain (unitless)")
 
         # Compute local absolute error
         error_map = np.abs(fixed_norm - warped_norm)
 
-        im = axes[Current_Row, 3].imshow(error_map, cmap='hot')
-        axes[Current_Row, 3].set_title("F-W Local Registration Error Heatmap", fontsize=16)
-        axes[Current_Row, 3].axis('off')
-        self.add_colorbar(fig, axes[Current_Row, 3], im, label="Absolute Intensity Difference")
+        # im = axes[Current_Row, 3].imshow(error_map, cmap='hot')
+        # axes[Current_Row, 3].set_title("F-W Local Registration Error Heatmap", fontsize=16)
+        # axes[Current_Row, 3].axis('off')
+        # self.add_colorbar(fig, axes[Current_Row, 3], im, label="Absolute Intensity Difference")
 
-        error_map = np.abs(fixed_norm - moving_norm)
-        im = axes[Current_Row, 4].imshow(error_map, cmap='hot')
-        axes[Current_Row, 4].set_title("F-M Local Registration Error Heatmap", fontsize=16)
-        axes[Current_Row, 4].axis('off')
-        self.add_colorbar(fig, axes[Current_Row, 4], im, label="Absolute Intensity Difference")
+        # error_map = np.abs(fixed_norm - moving_norm)
+        # im = axes[Current_Row, 4].imshow(error_map, cmap='hot')
+        # axes[Current_Row, 4].set_title("F-M Local Registration Error Heatmap", fontsize=16)
+        # axes[Current_Row, 4].axis('off')
+        # self.add_colorbar(fig, axes[Current_Row, 4], im, label="Absolute Intensity Difference")
 
 
 
@@ -351,19 +351,19 @@ class automate_testing:
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.1)
         cbar = fig.colorbar(im, cax=cax)
-        cbar.ax.set_ylabel(label, fontsize=12)
-        cbar.ax.tick_params(labelsize=10)
+        cbar.ax.set_ylabel(label, fontsize=26)
+        cbar.ax.tick_params(labelsize=20)
 
 
 # Example usage:
 
 if __name__ == "__main__":
     # Define the model and paths
-    model = tf.keras.models.load_model("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Best_models/Residual_Unet_1D_7K.keras", custom_objects={'MaskLoss': MaskLoss, 'MAELoss': MAELoss, 'Residual_Unet_1D_7K': Residual_Unet_1D_7K})
+    model = tf.keras.models.load_model("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Best_models/Unet_3Dense_5Kernel_with_mask (1).keras", custom_objects={'MaskLoss': MaskLoss, 'MAELoss': MAELoss, 'Unet_2Dense_5Kernel': Unet_2Dense_5Kernel, 'Residual_Unet': Residual_Unet, 'Unet': Unet, 'Unet_7Kernel': Unet_7Kernel, 'Unet_5Kernel': Unet_5Kernel, 'Unet_3Dense': Unet_3Dense, 'Unet_1Dense': Unet_1Dense, 'Unet_2Dense': Unet_2Dense, 'Unet_1Dense_7Kernel': Unet_1Dense_7Kernel, 'Unet_1Dense_5Kernel': Unet_1Dense_5Kernel, 'Unet_2Dense_7Kernel': Unet_2Dense_7Kernel, 'Unet_2Dense_5Kernel': Unet_2Dense_5Kernel, 'Unet_3Dense_7Kernel': Unet_3Dense_7Kernel, 'Unet_3Dense_5Kernel': Unet_3Dense_5Kernel, 'Residual_Unet_1D': Residual_Unet_1D, 'Residual_Unet_2D': Residual_Unet_2D, 'Residual_Unet_3D': Residual_Unet_3D, 'Residual_Unet_1D_7K': Residual_Unet_1D_7K, 'Residual_Unet_1D_5K': Residual_Unet_1D_5K, 'Residual_Unet_2D_7K': Residual_Unet_2D_7K, 'Residual_Uner_2D_5K': Residual_Unet_2D_5K, 'Residual_Unet_3D_7K': Residual_Unet_3D_7K, 'Residual_Unet_3D_5K': Residual_Unet_3D  })
 
     real_test_data_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/real_test_data"
 
-    model_name = "Residual_Unet_1D_7K_with_mask"
+    model_name = "Unet_3Dense_5Kernel_with_mask"  # Name of the model for saving results
 
     # Create an instance of automate_testing
     tester = automate_testing(model, real_test_data_path, model_name)

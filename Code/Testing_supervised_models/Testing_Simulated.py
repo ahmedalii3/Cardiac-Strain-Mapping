@@ -515,8 +515,7 @@ class test_model :
 model = tf.keras.models.load_model("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Best_models/Unet_3Dense_5Kernel_with_mask (1).keras", custom_objects={'MaskLoss': MaskLoss, 'MAELoss': MAELoss, 'Unet_3Dense_5Kernel': Unet_3Dense_5Kernel})
 # model = tf.keras.models.load_model("/Users/ahmed_ali/Downloads/Unet_3Dense_5Kernel_with_mask.keras", custom_objects={ 'Unet_3Dense_5Kernel': Unet_3Dense_5Kernel, 'MaskLoss': MaskLoss, 'MAELoss': MAELoss})
 test_model = test_model(model = model, test_data_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Frames", test_labels_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Displacements",mask_path="/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/npy_masks", model_name = "Unet_3D_5K_w_mask")
-
-
+#
 
                     
 
