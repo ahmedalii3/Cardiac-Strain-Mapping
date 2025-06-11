@@ -67,9 +67,9 @@ class Automate_Training():
     def load_data(self):
         folders_in_train_simulator_directory = os.listdir(self.dataset_path)
         for i, directory in enumerate(folders_in_train_simulator_directory):
-            if directory == "Displacement_loc":
+            if directory == "Displacement":
                 Displacement_directory = os.path.join(self.dataset_path, directory)
-            elif directory == "Frames_loc":
+            elif directory == "Frames":
                 Frames_directory = os.path.join(self.dataset_path, directory)
      
 
@@ -80,13 +80,17 @@ class Automate_Training():
         image = np.load(first_image_in_Frames_directory)
         first_image_in_Displacement_directory = os.path.join(Displacement_directory, files_in_Displacement_directory[0])
         image = np.load(first_image_in_Displacement_directory)
+        files_in_Displacement_directory.sort()
+        files_in_Frames_directory.sort()
         first_frame_dict = {}
         second_frame_dict = {}
         for file in files_in_Frames_directory:
             file_path = os.path.join(Frames_directory, file)
-            image = np.load(file_path)
+            if file_path.endswith('.DS_Store'):
+                continue
+            image = np.load(file_path, allow_pickle=True)
             #convert image to float
-            image = image.astype(np.float32)
+        
             #normalize image
             # image = image / 255.0
             
@@ -104,7 +108,7 @@ class Automate_Training():
         y_displacement_dict = {}
         for file in files_in_Displacement_directory:
             file_path = os.path.join(Displacement_directory , file)
-            image = np.load(file_path)
+            image = np.load(file_path, allow_pickle=True)
 
             
             frame_id = file.split('_')[-1].split('.')[0]
@@ -122,6 +126,8 @@ class Automate_Training():
         x_image = []
         y_image = []
         for key in first_frame_dict.keys():
+            if key not in second_frame_dict.keys() or key not in x_displacement_dict.keys() or key not in y_displacement_dict.keys():
+                continue
             moving_image.append(first_frame_dict[key])
             fixed_image.append(second_frame_dict[key])
             x_image.append(x_displacement_dict[key])
@@ -146,7 +152,10 @@ class Automate_Training():
         self.y_train = displacement_array[:train_index]
         self.y_valid = displacement_array[train_index:valid_index]
         self.y_test = displacement_array[valid_index:]
-        
+
+
+        # save these arrays
+ 
         
 
     def apply_displacement( self,image, x_displacement, y_displacement):
@@ -214,223 +223,79 @@ class Automate_Training():
                     OverStrain = True
 
         return Ep1All, Ep2All, Ep3All
-    
-    def limit_strain_range(self,displacement_x, displacement_y, strain_upper_bound, stretch = False,
-                     reduction_factor=0.99, amplification_factor=1.01, max_iterations=1000, tolerance=1e-6):
+    def enforce_full_principal_strain_order(self,Ep1All, Ep2All, Ep3All=None):
         """
-        Convert displacement maps to strain tensors using Eulerian strain formulation.
-        Iteratively adjust displacements until all strain values are within the specified bounds:
-        - Reduce displacements if strain exceeds upper bound
-        - Amplify displacements if strain is below lower bound
+        Ensure Ep1All >= Ep2All >= Ep3All at every voxel (pixel) location.
+        Sorts the three principal strains per point.
 
-        Parameters:
-        -----------
-        displacement_x : numpy.ndarray
-            Displacement field in x-direction
-        displacement_y : numpy.ndarray
-            Displacement field in y-direction
-        strain_lower_bound : float
-            Minimum desired strain value
-        strain_upper_bound : float
-            Maximum allowable strain value
-        reduction_factor : float, optional
-            Factor by which to reduce displacements each iteration (default: 0.99)
-        amplification_factor : float, optional
-            Factor by which to amplify displacements each iteration (default: 1.01)
-        max_iterations : int, optional
-            Maximum number of iterations to perform (default: 1000)
-        tolerance : float, optional
-            Convergence tolerance (default: 1e-6)
+        Args:
+            Ep1All (np.ndarray): First principal strain field.
+            Ep2All (np.ndarray): Second principal strain field.
+            Ep3All (np.ndarray): Third principal strain field (incompressibility strain).
 
         Returns:
-        --------
-        tuple
-            (adjusted_displacement_x, adjusted_displacement_y,
-            initial_strain_tensor, final_strain_tensor, max_initial_strain, max_final_strain)
+            Ep1_sorted (np.ndarray): Largest principal strain.
+            Ep2_sorted (np.ndarray): Middle principal strain.
+            Ep3_sorted (np.ndarray): Smallest principal strain.
         """
-        # Ensure input arrays have the same shape
-        if displacement_x.shape != displacement_y.shape:
-            raise ValueError("Displacement maps must have the same shape")
-        if stretch:
-            strain_lower_bound = 0.01
+
+        if Ep3All is not None:
+            # Stack all principal strains along a new axis
+            strain_stack = np.stack([Ep1All, Ep2All, Ep3All], axis=0)  # Shape (3, H, W, T)
         else:
-            strain_lower_bound = 0
+            # Stack only the first two principal strains
+            strain_stack = np.stack([Ep1All, Ep2All, Ep2All], axis=0) # Shape (2, H, W, T)
+        # Sort along the new axis (axis=0) descending
+        strain_sorted = np.sort(strain_stack, axis=0)[::-1, ...]  # Reverse to get descending
 
-        # Make copies of the input arrays to avoid modifying the originals
-        dx = displacement_x.copy()
-        dy = displacement_y.copy()
+        Ep1_sorted = strain_sorted[0]
+        Ep2_sorted = strain_sorted[1]
+        Ep3_sorted = strain_sorted[2]
 
-        # Create gradient operators for calculating spatial derivatives
-        y_size, x_size = dx.shape
-
-        # Calculate initial strain tensor
-        # Calculate displacement gradients using central differences
-        dudx_initial = np.zeros_like(dx)
-        dudy_initial = np.zeros_like(dx)
-        dvdx_initial = np.zeros_like(dx)
-        dvdy_initial = np.zeros_like(dx)
-
-        # Interior points (central differences)
-        dudx_initial[1:-1, 1:-1] = (dx[1:-1, 2:] - dx[1:-1, :-2]) / 2
-        dudy_initial[1:-1, 1:-1] = (dx[2:, 1:-1] - dx[:-2, 1:-1]) / 2
-        dvdx_initial[1:-1, 1:-1] = (dy[1:-1, 2:] - dy[1:-1, :-2]) / 2
-        dvdy_initial[1:-1, 1:-1] = (dy[2:, 1:-1] - dy[:-2, 1:-1]) / 2
-
-        # Edges (forward/backward differences)
-        # Left edge
-        dudx_initial[:, 0] = dx[:, 1] - dx[:, 0]
-        dvdx_initial[:, 0] = dy[:, 1] - dy[:, 0]
-        # Right edge
-        dudx_initial[:, -1] = dx[:, -1] - dx[:, -2]
-        dvdx_initial[:, -1] = dy[:, -1] - dy[:, -2]
-        # Top edge
-        dudy_initial[0, :] = dx[1, :] - dx[0, :]
-        dvdy_initial[0, :] = dy[1, :] - dy[0, :]
-        # Bottom edge
-        dudy_initial[-1, :] = dx[-1, :] - dx[-2, :]
-        dvdy_initial[-1, :] = dy[-1, :] - dy[-2, :]
-
-        # Calculate Eulerian strain tensor components
-        # E = 1/2 * (∇u + ∇u^T + ∇u^T∇u)
-        E_xx_initial = 0.5 * (2*dudx_initial + dudx_initial**2 + dvdx_initial**2)
-        E_yy_initial = 0.5 * (2*dvdy_initial + dudy_initial**2 + dvdy_initial**2)
-        E_xy_initial = 0.5 * (dudy_initial + dvdx_initial + dudx_initial*dudy_initial + dvdx_initial*dvdy_initial)
-        E_yx_initial = E_xy_initial
-
-        # Calculate principal strains
-        avg_normal_strain_initial = (E_xx_initial + E_yy_initial) / 2
-        diff_normal_strain_initial = (E_xx_initial - E_yy_initial) / 2
-        radius_initial = np.sqrt(diff_normal_strain_initial**2 + E_xy_initial**2)
+        return Ep1_sorted, Ep2_sorted, Ep3_sorted
 
 
-        E1_initial = avg_normal_strain_initial + radius_initial  # Maximum principal strain
-        E2_initial = avg_normal_strain_initial - radius_initial  # Minimum principal strain
+    def limit_strain_range(self,FrameDisplX, FrameDisplY, deltaX=1, deltaY=1):
+        """
+        Compute principal strains (Ep1, Ep2) and incompressibility strain (Ep3) 
+        from displacement fields.
 
-        # KHZ 250318: Corrected the calculation of principal strains
-        E_xx_initial = 0.5 * (2*dudx_initial - dudx_initial**2 - dvdx_initial**2)
-        E_yy_initial = 0.5 * (2*dvdy_initial - dudy_initial**2 - dvdy_initial**2)
-        E_xy_initial = 0.5 * (dudy_initial + dvdx_initial - dudx_initial*dudy_initial - dvdx_initial*dvdy_initial)
+        Args:
+            FrameDisplX (np.ndarray): X displacement field (shape: H, W, T).
+            FrameDisplY (np.ndarray): Y displacement field (shape: H, W, T).
+            deltaX (float): Pixel spacing in the X direction (mm).
+            deltaY (float): Pixel spacing in the Y direction (mm).
 
-        E1_initial = (E_xx_initial + E_yy_initial) / 2 + np.sqrt(((E_xx_initial - E_yy_initial) / 2) ** 2 + ((E_xy_initial + E_yx_initial) / 2) ** 2)
-        E2_initial = (E_xx_initial + E_yy_initial) / 2 - np.sqrt(((E_xx_initial - E_yy_initial) / 2) ** 2 + ((E_xy_initial + E_yx_initial) / 2) ** 2)
-        # KHZ 250318: Corrected the calculation of principal strains
+        Returns:
+            Ep1All (np.ndarray): Principal strain 1 (shape: H, W, T).
+            Ep2All (np.ndarray): Principal strain 2 (shape: H, W, T).
+            Ep3All (np.ndarray): Incompressibility strain (shape: H, W, T).
+        """
+        final_tensor = {}
+        # Compute spatial gradients
+        UXx, UXy = np.gradient(FrameDisplX, deltaX, deltaY, axis=(0, 1))
+        UYx, UYy = np.gradient(FrameDisplY, deltaX, deltaY, axis=(0, 1))
 
+        # Compute Eulerian strain tensor components
+        ExxAll = (2 * UXx - (UXx**2 + UYx**2)) / 2
+        ExyAll = (UXy + UYx - (UXx * UXy + UYx * UYy)) / 2
+        EyyAll = (2 * UYy - (UXy**2 + UYy**2)) / 2
 
-        # Find maximum and minimum absolute strain values
-        max_initial_strain = max(np.max(np.abs(E1_initial)), np.max(np.abs(E2_initial)))
-        min_initial_strain = min(np.min(np.abs(E1_initial)), np.min(np.abs(E2_initial)))
+        # Compute principal strains
+        Ep1All = (ExxAll + EyyAll) / 2 + np.sqrt(((ExxAll - EyyAll) / 2) ** 2 + ExyAll ** 2)
+        Ep2All = (ExxAll + EyyAll) / 2 - np.sqrt(((ExxAll - EyyAll) / 2) ** 2 + ExyAll ** 2)
 
-        # Store initial strain tensor
-        initial_strain_tensor = {
-            'E_xx': E_xx_initial,
-            'E_yy': E_yy_initial,
-            'E_xy': E_xy_initial,
-            'E1': E1_initial,
-            'E2': E2_initial,
-            'min_abs_strain': min_initial_strain,
-            'max_abs_strain': max_initial_strain
-        }
+        Ep1All, Ep2All, _ = self.enforce_full_principal_strain_order(Ep1All, Ep2All)
 
-        # If initial strain is already within bounds, no need to iterate
-        if (max_initial_strain <= strain_upper_bound) and (min_initial_strain >= strain_lower_bound):
-            return dx, dy, initial_strain_tensor, initial_strain_tensor, max_initial_strain, max_initial_strain, min_initial_strain, min_initial_strain
+        # Compute incompressibility strain using the determinant rule
+        Ep3All = 1 / ((1 + np.maximum(Ep1All, Ep2All)) * (1 + np.minimum(Ep1All, Ep2All))) - 1
 
-        # Otherwise, proceed with iterative adjustment
-        iterations = 0
-        max_strain = max_initial_strain
-        min_strain = min_initial_strain
-        prev_max_strain = float('inf')
-        prev_min_strain = 0
+        final_tensor['E1'] = Ep1All
+        final_tensor['E2'] = Ep2All
+        final_tensor['E3'] = Ep3All
+        
 
-        # Initialize strain tensor components for the loop
-        E_xx = E_xx_initial.copy()
-        E_yy = E_yy_initial.copy()
-        E_xy = E_xy_initial.copy()
-        E1 = E1_initial.copy()
-        E2 = E2_initial.copy()
-
-        while ((max_strain > strain_upper_bound) or (min_strain < strain_lower_bound)) and (iterations < max_iterations):
-            # Determine whether to reduce or amplify displacements
-            if max_strain > strain_upper_bound:
-                # Reduce displacements if above upper bound
-                adjustment_factor = reduction_factor
-            elif min_strain < strain_lower_bound:
-                # Amplify displacements if below lower bound
-                adjustment_factor = amplification_factor
-            else:
-                # This shouldn't happen due to the while condition, but just in case
-                break
-
-            # Apply adjustment
-            dx *= adjustment_factor
-            dy *= adjustment_factor
-
-            # Recalculate displacement gradients
-            dudx = np.zeros_like(dx)
-            dudy = np.zeros_like(dx)
-            dvdx = np.zeros_like(dx)
-            dvdy = np.zeros_like(dx)
-
-            # Interior points (central differences)
-            dudx[1:-1, 1:-1] = (dx[1:-1, 2:] - dx[1:-1, :-2]) / 2
-            dudy[1:-1, 1:-1] = (dx[2:, 1:-1] - dx[:-2, 1:-1]) / 2
-            dvdx[1:-1, 1:-1] = (dy[1:-1, 2:] - dy[1:-1, :-2]) / 2
-            dvdy[1:-1, 1:-1] = (dy[2:, 1:-1] - dy[:-2, 1:-1]) / 2
-
-            # Edges (forward/backward differences)
-            # Left edge
-            dudx[:, 0] = dx[:, 1] - dx[:, 0]
-            dvdx[:, 0] = dy[:, 1] - dy[:, 0]
-            # Right edge
-            dudx[:, -1] = dx[:, -1] - dx[:, -2]
-            dvdx[:, -1] = dy[:, -1] - dy[:, -2]
-            # Top edge
-            dudy[0, :] = dx[1, :] - dx[0, :]
-            dvdy[0, :] = dy[1, :] - dy[0, :]
-            # Bottom edge
-            dudy[-1, :] = dx[-1, :] - dx[-2, :]
-            dvdy[-1, :] = dy[-1, :] - dy[-2, :]
-
-            # Calculate Eulerian strain tensor components
-            # E = 1/2 * (∇u + ∇u^T + ∇u^T∇u)
-            E_xx = 0.5 * (2*dudx + dudx**2 + dvdx**2)
-            E_yy = 0.5 * (2*dvdy + dudy**2 + dvdy**2)
-            E_xy = 0.5 * (dudy + dvdx + dudx*dudy + dvdx*dvdy)
-
-            # Calculate principal strains
-            avg_normal_strain = (E_xx + E_yy) / 2
-            diff_normal_strain = (E_xx - E_yy) / 2
-            radius = np.sqrt(diff_normal_strain**2 + E_xy**2)
-
-            E1 = avg_normal_strain + radius  # Maximum principal strain
-            E2 = avg_normal_strain - radius  # Minimum principal strain
-
-            # Find maximum and minimum absolute strain values
-            max_strain = max(np.max(np.abs(E1)), np.max(np.abs(E2)))
-            min_strain = min(np.min(np.abs(E1)), np.min(np.abs(E2)))
-
-            # Check convergence
-            if (abs(max_strain - prev_max_strain) < tolerance and
-                abs(min_strain - prev_min_strain) < tolerance):
-                break
-
-            prev_max_strain = max_strain
-            prev_min_strain = min_strain
-            iterations += 1
-
-        # Prepare final strain tensor
-        final_strain_tensor = {
-            'E_xx': E_xx,
-            'E_yy': E_yy,
-            'E_xy': E_xy,
-            'E1': E1,
-            'E2': E2,
-            'min_abs_strain': min_strain,
-            'max_abs_strain': max_strain
-        }
-
-        return dx, dy, initial_strain_tensor, final_strain_tensor, max_initial_strain, max_strain, min_initial_strain, min_strain
-
+        return None, None, final_tensor, final_tensor, np.max(Ep1All), np.max(Ep2All), np.min(Ep1All), np.min(Ep2All)
 
 
 
@@ -461,7 +326,7 @@ class Automate_Training():
         disp = data['displacements']
 
         # Calculate strain using the displacement fields
-        result = self.limit_strain_range(disp[..., 0], disp[..., 1], strain_upper_bound=1, stretch=False)
+        result = self.limit_strain_range(disp[..., 0], disp[..., 1])
         dx, dy, initial_strain_tensor, final_strain_tensor, max_initial_strain, max_strain, min_initial_strain, min_strain = result
 
         # Create a figure with 3 rows and 3 columns
@@ -933,68 +798,68 @@ class Automate_Training():
         self.create_interactive_plots(data, model_name_train, model_folder)
 
         ##################################### plot strain over the real data ############################################################
-        fixed_image = self.fixed_images_train[train_sample]
-        moving_image = self.moving_images_train[train_sample]
-        moving_image_try = self.moving_images_train[train_sample]
-        fixed_image_try = self.fixed_images_train[train_sample]
-        moving_image_try = tf.expand_dims(moving_image_try, axis=0)
-        fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
+        # fixed_image = self.fixed_images_train[train_sample]
+        # moving_image = self.moving_images_train[train_sample]
+        # moving_image_try = self.moving_images_train[train_sample]
+        # fixed_image_try = self.fixed_images_train[train_sample]
+        # moving_image_try = tf.expand_dims(moving_image_try, axis=0)
+        # fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
       
-        predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
-        x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
-        y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
+        # predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
+        # x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
+        # y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
         
-        Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
-        vmin, vmax = np.min(Ep2All), np.max(Ep1All)
-        fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+        # Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
+        # vmin, vmax = np.min(Ep2All), np.max(Ep1All)
+        # fig, ax = plt.subplots(1, 4, figsize=(15, 5))
 
-        im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider1 = make_axes_locatable(ax[0])
-        cax1 = divider1.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im1, cax=cax1, shrink=0.8)
-        ax[0].set_title('Ep1All')
+        # im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider1 = make_axes_locatable(ax[0])
+        # cax1 = divider1.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im1, cax=cax1, shrink=0.8)
+        # ax[0].set_title('Ep1All')
 
-        im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider2 = make_axes_locatable(ax[1])
-        cax2 = divider2.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im2, cax=cax2, shrink=0.8)
-        ax[1].set_title('Ep2All')
+        # im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider2 = make_axes_locatable(ax[1])
+        # cax2 = divider2.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im2, cax=cax2, shrink=0.8)
+        # ax[1].set_title('Ep2All')
 
 
-        im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider3 = make_axes_locatable(ax[2])
-        cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im3, cax=cax3, shrink=0.8)
-        ax[2].set_title('Ep3All')
+        # im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider3 = make_axes_locatable(ax[2])
+        # cax3 = divider3.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im3, cax=cax3, shrink=0.8)
+        # ax[2].set_title('Ep3All')
 
         
 
-                 # Prepare the meshgrid for arrows
-        grid_spacing = 5  # adjust for density of arrows
-        h, w = moving_image.shape
-        Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
+        #          # Prepare the meshgrid for arrows
+        # grid_spacing = 5  # adjust for density of arrows
+        # h, w = moving_image.shape
+        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
 
-        # Subsample displacements according to grid spacing
-        U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # # Subsample displacements according to grid spacing
+        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
 
-        ax[3].imshow(moving_image, cmap='gray')
+        # ax[3].imshow(moving_image, cmap='gray')
 
-        # Overlay the displacement vectors (arrows)
-        ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
+        # # Overlay the displacement vectors (arrows)
+        # ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
 
-        ax[3].set_title('Predicted Displacement Field over MOving Image')
-        ax[3].axis('off')
+        # ax[3].set_title('Predicted Displacement Field over MOving Image')
+        # ax[3].axis('off')
 
-        # Save the plot
-        ax[3].set_title('Predicted Displacement')
+        # # Save the plot
+        # ax[3].set_title('Predicted Displacement')
 
-        for i in range (4):
-            ax[i].axis('off')
+        # for i in range (4):
+        #     ax[i].axis('off')
 
-        strain_plot_path = os.path.join(model_folder, f"strain_plot_train_simulated{model_name}.png")
-        plt.savefig(strain_plot_path)
-        plt.close()
+        # strain_plot_path = os.path.join(model_folder, f"strain_plot_train_simulated{model_name}.png")
+        # plt.savefig(strain_plot_path)
+        # plt.close()
 
 
          ########################################### plot the direction test  ########################################################################
@@ -1007,7 +872,8 @@ class Automate_Training():
         moving_image_try = tf.expand_dims(moving_image_try, axis=0)
         fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
         predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
-        data['displacements'] = predicted_deformation_field[0]
+        # data['displacements'] = predicted_deformation_field[0]
+        data['displacements'] = self.y_test[test_sample]
         x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
         y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
         x_displacement = self.y_test[test_sample, :, :, 0]
@@ -1073,7 +939,7 @@ class Automate_Training():
         moving_image_try = tf.expand_dims(moving_image_try, axis=-1)
       
         warped_image = self.apply_displacement(moving_image_try, x_displacement_predicted, y_displacement_predicted)
-        
+        data['warped'] = warped_image
         
         fig, ax = plt.subplots(1, 4, figsize=(18, 5))  # Increase figure width
 
@@ -1110,67 +976,69 @@ class Automate_Training():
         warped_image_path = os.path.join(model_folder, f"warped_image_test{model_name}.png")
         plt.savefig(warped_image_path)
         plt.close()
+        model_name_test = model_name + "_test"
+        self.create_interactive_plots(data, model_name_test, model_folder)
 
 
         ############# plot strain over the test data ############
     
-        moving_image = self.moving_images_test[test_sample]
-        moving_image_try = self.moving_images_test[test_sample]
-        fixed_image_try = self.fixed_images_test[test_sample]
-        moving_image_try = tf.expand_dims(moving_image_try, axis=0)
-        fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
+        # moving_image = self.moving_images_test[test_sample]
+        # moving_image_try = self.moving_images_test[test_sample]
+        # fixed_image_try = self.fixed_images_test[test_sample]
+        # moving_image_try = tf.expand_dims(moving_image_try, axis=0)
+        # fixed_image_try = tf.expand_dims(fixed_image_try, axis=0)
 
-        predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
-        x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
-        y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
+        # predicted_deformation_field = model.predict([moving_image_try, fixed_image_try])
+        # x_displacement_predicted = predicted_deformation_field[0, :, :, 0]
+        # y_displacement_predicted = predicted_deformation_field[0, :, :, 1]
     
-        Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
-        vmin, vmax = np.min(Ep2All), np.max(Ep1All)
-        fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+        # Ep1All, Ep2All, Ep3All = self.calculate_strain(x_displacement_predicted, y_displacement_predicted)
+        # vmin, vmax = np.min(Ep2All), np.max(Ep1All)
+        # fig, ax = plt.subplots(1, 4, figsize=(15, 5))
 
-        im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider1 = make_axes_locatable(ax[0])
-        cax1 = divider1.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im1, cax=cax1, shrink=0.8)
-        ax[0].set_title('Ep1All')
+        # im1 = ax[0].imshow(Ep1All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider1 = make_axes_locatable(ax[0])
+        # cax1 = divider1.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im1, cax=cax1, shrink=0.8)
+        # ax[0].set_title('Ep1All')
 
-        im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider2 = make_axes_locatable(ax[1])
-        cax2 = divider2.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im2, cax=cax2, shrink=0.8)
-        ax[1].set_title('Ep2All')
+        # im2 = ax[1].imshow(Ep2All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider2 = make_axes_locatable(ax[1])
+        # cax2 = divider2.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im2, cax=cax2, shrink=0.8)
+        # ax[1].set_title('Ep2All')
 
-        im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
-        divider3 = make_axes_locatable(ax[2])
-        cax3 = divider3.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im3, cax=cax3, shrink=0.8)
-        ax[2].set_title('Ep3All')
+        # im3 = ax[2].imshow(Ep3All, cmap='coolwarm', vmin=vmin, vmax=vmax)
+        # divider3 = make_axes_locatable(ax[2])
+        # cax3 = divider3.append_axes("right", size="5%", pad=0.1)
+        # fig.colorbar(im3, cax=cax3, shrink=0.8)
+        # ax[2].set_title('Ep3All')
     
-                 # Prepare the meshgrid for arrows
-        grid_spacing = 5  # adjust for density of arrows
-        h, w = moving_image.shape
-        Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
+        #          # Prepare the meshgrid for arrows
+        # grid_spacing = 5  # adjust for density of arrows
+        # h, w = moving_image.shape
+        # Y, X = np.mgrid[0:h:grid_spacing, 0:w:grid_spacing]
 
-        # Subsample displacements according to grid spacing
-        U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
-        V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # # Subsample displacements according to grid spacing
+        # U = x_displacement_predicted[::grid_spacing, ::grid_spacing]
+        # V = y_displacement_predicted[::grid_spacing, ::grid_spacing]
 
-        ax[3].imshow(moving_image, cmap='gray')
+        # ax[3].imshow(moving_image, cmap='gray')
 
-        # Overlay the displacement vectors (arrows)
-        ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
+        # # Overlay the displacement vectors (arrows)
+        # ax[3].quiver(X, Y, U, V, color='red', angles='xy', scale_units='xy', scale=0.8, width=0.004)
 
-        ax[3].set_title('Predicted Displacement Field over MOving Image')
-        ax[3].axis('off')
+        # ax[3].set_title('Predicted Displacement Field over MOving Image')
+        # ax[3].axis('off')
 
-        # Save the plot
-        ax[3].set_title('Predicted Displacement')
+        # # Save the plot
+        # ax[3].set_title('Predicted Displacement')
 
-        for i in range (4):
-            ax[i].axis('off')
-        strain_plot_path = os.path.join(model_folder, f"strain_plot_test_simulated{model_name}.png")
-        plt.savefig(strain_plot_path)
-        plt.close()
+        # for i in range (4):
+        #     ax[i].axis('off')
+        # strain_plot_path = os.path.join(model_folder, f"strain_plot_test_simulated{model_name}.png")
+        # plt.savefig(strain_plot_path)
+        # plt.close()
 
 
         ############# plot x_displacement over train #############
@@ -1215,7 +1083,7 @@ class Automate_Training():
 
             stopping_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='val_loss',
-                patience=35,
+                patience=20,
                 mode='min',
                 verbose=1
             )
@@ -1247,21 +1115,15 @@ if __name__ == '__main__':
     # physical_devices = tf.config.experimental.list_physical_devices('GPU')
     # print("Num GPUs Available: ", len(physical_devices))
 
-    dataset_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Data/Simulated_V2.1"
-    real_test_data_path = "../FrameWork/real_test_data"
+    dataset_path = "Data"
+    real_test_data_path = "real_test_data"
     current_script = Path(__file__)
-    # models_list = [ Residual_Unet(),Unet(), Unet_7Kernel(), Unet_5Kernel(), Unet_3Dense(), Unet_1Dense(), Unet_2Dense(), Unet_1Dense_7Kernel(), Unet_1Dense_5Kernel(), Unet_2Dense_7Kernel(), Unet_2Dense_5Kernel(), Unet_3Dense_7Kernel(), Unet_3Dense_5Kernel(), Residual_Unet_1D(), Residual_Unet_2D(), Residual_Unet_3D(), Residual_Unet_1D_7K(), Residual_Unet_1D_5K(), Residual_Unet_2D_7K(), Residual_Unet_2D_5K(), Residual_Unet_3D_7K(), Residual_Unet_3D_5K()]
-    models_list=[Unet()]
+    models_list = [ Residual_Unet(),Unet(), Unet_7Kernel(), Unet_5Kernel(), Unet_3Dense(), Unet_1Dense(), Unet_2Dense(), Unet_1Dense_7Kernel(), Unet_1Dense_5Kernel(), Unet_2Dense_7Kernel(), Unet_2Dense_5Kernel(), Unet_3Dense_7Kernel(), Unet_3Dense_5Kernel(), Residual_Unet_1D(), Residual_Unet_2D(), Residual_Unet_3D(), Residual_Unet_1D_7K(), Residual_Unet_1D_5K(), Residual_Unet_2D_7K(), Residual_Unet_2D_5K(), Residual_Unet_3D_7K(), Residual_Unet_3D_5K()]
+    # models_list=[Unet()]
     save_dir = current_script.parent / "Saved"
     saved_model_dir = current_script.parent / "Models"
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(saved_model_dir, exist_ok=True)
-    # trainer = Automate_Training(dataset_path,real_test_data_path, models_list, save_dir, saved_model_dir)
-    
-    model_name = "Unet_loaded"
-    history = None
-    # trainer.train_models(num_epochs = 100, batch_size = 32)
-    model = tf.keras.models.load_model("/Users/ahmed_ali/Library/CloudStorage/GoogleDrive-ahmed.rajab502@eng-st.cu.edu.eg/My Drive/Models/Unet.keras", custom_objects={'MaskLoss': MaskLoss, 'MAELoss': MAELoss, 'Unet': Unet})
-    # trainer.visualise_outputs(model_name, history, model, inc_history = False)
-
-
+    trainer = Automate_Training(dataset_path,real_test_data_path, models_list, save_dir, saved_model_dir)
+    trainer.train_models(num_epochs = 120, batch_size = 32)
+ 
