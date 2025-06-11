@@ -54,19 +54,20 @@ def generate_bulls_eye(strain_map, mask, save_path='bulls_eye_plot.png'):
     return segment_means, segmented_map
 
 
-displacement_x = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Displacements/patient096_frame01_slice_4_ACDC_#10_x.npy")
-displacement_y = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Displacements/patient096_frame01_slice_4_ACDC_#10_y.npy")
+displacement_x = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Displacements/patient097_frame11_slice_5_ACDC_#3_x.npy")
+displacement_y = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Displacements/patient097_frame11_slice_5_ACDC_#3_y.npy")
 _,_,final_tensor, _, max_initial_strain, max_strain, min_initial_strain, min_strain = limit_strain_range(displacement_x, displacement_y)
 E1 = final_tensor['E1']
 # strain_map = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Archive/strain5/frame_5_strain.npy")
 strain_map = E1
-mask = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/npy_masks/patient096_frame01_slice_4_ACDC_#10_2.npy")
+mask = np.load("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/npy_masks/patient097_frame11_slice_5_ACDC_#3_2.npy")
 
 print("Strain map shape:", strain_map.shape)
 print("Mask shape:", mask.shape)
 mask = mask == 1
 plt.imshow(strain_map, cmap='jet', vmin=-0.3, vmax = 0.3)
 plt.colorbar()
-plt.show()
+# plt.show()
+plt.savefig('strain_map.png', dpi=300, bbox_inches='tight')
 means, seg_img = generate_bulls_eye(strain_map, mask)
 print("Mean strain values per segment:", means)
