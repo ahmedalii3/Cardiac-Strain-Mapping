@@ -1,0 +1,11 @@
+{
+  "wind_dir": [0, 360],
+  "wind_speed": [20, 100],
+  "num_frames": [30, 60],
+
+  "strain_validation": {
+    "StrainEpPeak": 0.45,
+    "inner_radius": [5, 15],
+    "outer_radius": [80, 120]
+  }
+}

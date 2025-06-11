@@ -1,0 +1,11 @@
+{
+    "folder_with_segs_from_prev_stage": null,
+    "list_of_lists_or_source_folder": "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Segment/nnUNetFrame/dataset/nnUNet_raw/Dataset007_ShortAX/imagesTs",
+    "num_parts": 1,
+    "num_processes_preprocessing": 3,
+    "num_processes_segmentation_export": 3,
+    "output_folder_or_list_of_truncated_output_files": "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Segment/nnUNetFrame/dataset/nnUNet_raw/Dataset007_ShortAX/pred_nnUNet",
+    "overwrite": true,
+    "part_id": 0,
+    "save_probabilities": false
+}
