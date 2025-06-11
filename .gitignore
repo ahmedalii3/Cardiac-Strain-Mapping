@@ -12,24 +12,25 @@ Code/Localization and Segmentation/Localize Using MONAI/configs
 Code/Localization and Segmentation/Localize Using MONAI/models
 Code/Localization and Segmentation/Localize Using MONAI/tensorflow_env
 ! Code/Localization and Segmentation/Localize Using MONAI/docs
-Code/Wave/Saved
-Code/Wave/Saved_test
-Code/Wave/trash
+Code/Archive/Wave/Saved
+Code/Archive/Wave/Saved_test
+Code/Archive/Wave/trash
 Code/Localization and Segmentation/Segment Using nnUnet/nnUNetFrame/dataset/nnUNet_trained_models
-Code/Wave_SimulatorV2/Dr_Reference_code/heart_cine_simulateV2.ipynb
-Code/Wave_SimulatorV2/Dr_Reference_code/wave_simulation.ipynb
-Code/Wave_SimulatorV2/drafts/heart_cine_simulate.ipynb
-Code/Wave_SimulatorV2/heart_cine_simulate.ipynb
-Code/Wave_SimulatorV2/drafts/simualte.ipynb
-Code/Wave_SimulatorV2/generatedData
+Code/Cine_Generator/Dr_Reference_code/heart_cine_simulateV2.ipynb
+Code/Cine_Generator/Dr_Reference_code/wave_simulation.ipynb
+Code/Cine_Generator/drafts/heart_cine_simulate.ipynb
+Code/Cine_Generator/heart_cine_simulate.ipynb
+Code/Cine_Generator/drafts/simualte.ipynb
+Code/Cine_Generator/generatedData
 Code/Archive/patient5
 Code/Archive/predicted5
 Code/Archive/predicted55
 Code/Supervised Framework/Loaded_data
-Code/Wave_SimulatorV2/Dr_Reference_code/V3/heart_cine_simulate.ipynb
-Code/Wave_SimulatorV2/generatedData_1
+Code/Cine_Generator/Dr_Reference_code/V3/heart_cine_simulate.ipynb
+Code/Cine_Generator/generatedData_1
 Best_models
 Results_Supervised
-Code/Archive/patient5dicom
+Code/Archive/patient5dicoms
 Code/Archive/strain5
 Code/Supervised Framework/real_test_data
+Code/Archive/Wave/Train Simulated Data
