@@ -245,78 +245,6 @@ class test_model :
                 self.E1_label[file_code] = E1_label.tolist()
                 self.E2_label[file_code] = E2_label.tolist()
 
-    # def calculate_MSE_E1(self):
-    #     all_E1_labelled = []
-    #     all_E1_predicted = []
-
-    #     # Collect common samples
-    #     for file_code in self.frame1.keys():
-    #         if file_code in self.frame2:
-    #             all_E1_labelled.append(self.E1_label[file_code])
-    #             all_E1_predicted.append(self.E1_predicted[file_code])
-
-    #     all_E1_labelled = np.array(all_E1_labelled)
-    #     all_E1_predicted = np.array(all_E1_predicted)
-    #     length = all_E1_labelled.shape[0]
-        
-    #     print(f"Shape of E1 arrays: {all_E1_labelled.shape}")
-
-    #     # Compute MSE for each strain range
-    #     for rang in self.strain_loss_ranges:
-    #         total_error = 0.0
-    #         total_pixels = 0
-    #         for i in range(length):
-    #             label = all_E1_labelled[i]
-    #             pred = all_E1_predicted[i]
-
-    #             # Apply individual masks to label and prediction
-    #             label_mask = (label > rang - 0.05) & (label < rang)
-    #             pred_mask = (pred > rang - 0.05) & (pred < rang)
-
-    #             label_masked = np.where(label_mask, label, 0.0)
-    #             pred_masked = np.where(pred_mask, pred, 0.0)
-
-    #             # Only calculate over non-zero (active) pixels
-    #             active_mask = (label_masked != 0) | (pred_masked != 0)
-    #             active_pixel_count = np.sum(active_mask)
-
-    #             if active_pixel_count > 0:
-    #                 error = (label_masked - pred_masked) ** 2
-    #                 total_error += np.sum(error[active_mask])
-    #                 total_pixels += active_pixel_count
-
-    #         # Save normalized MSE for this strain range
-    #         if total_pixels > 0:
-    #             self.E1_loss[rang] = total_error / total_pixels
-    #         else:
-    #             self.E1_loss[rang] = 0.0  # or np.nan if you want to skip empty ranges
-
-    #     print(f"Range {rang:.2f}: MSE = {self.E1_loss[rang]:.6f}, Active Pixels = {total_pixels}")
-    #         # for i in range(length):
-    #         #     label = all_E1_labelled[i]
-    #         #     pred = all_E1_predicted[i]
-
-    #         #     # Create a mask where BOTH label and pred are in the range
-    #         #     mask = (label > rang - 0.05) & (label < rang) & \
-    #         #         (pred > rang - 0.05) & (pred < rang)
-
-    #         #     pixel_count = np.sum(mask)
-    #         #     if pixel_count > 0:
-    #         #         squared_error = (label - pred) ** 2
-    #         #         total_squared_error += np.sum(squared_error[mask])
-    #         #         total_pixel_count += pixel_count
-
-    #         # if total_pixel_count > 0:
-    #         #     mse = total_squared_error / total_pixel_count
-    #         # else:
-    #         #     mse = 0.0  # or np.nan to indicate missing data
-
-    #         # self.E1_loss[rang] = {
-    #         #     'mse': mse,
-    #         #     'pixel_count': total_pixel_count
-    #         # }
-
-    #         # print(f"Range {rang:.2f}: MSE = {mse:.6f}, Pixels = {total_pixel_count}")
     def calculate_MSE_E1(self):
         all_E1_labelled = []
         all_E1_predicted = []
@@ -515,7 +443,7 @@ class test_model :
 model = tf.keras.models.load_model("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Best_models/Unet_3Dense_5Kernel_with_mask (1).keras", custom_objects={'MaskLoss': MaskLoss, 'MAELoss': MAELoss, 'Unet_3Dense_5Kernel': Unet_3Dense_5Kernel})
 # model = tf.keras.models.load_model("/Users/ahmed_ali/Downloads/Unet_3Dense_5Kernel_with_mask.keras", custom_objects={ 'Unet_3Dense_5Kernel': Unet_3Dense_5Kernel, 'MaskLoss': MaskLoss, 'MAELoss': MAELoss})
 test_model = test_model(model = model, test_data_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Frames", test_labels_path = "/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/Displacements",mask_path="/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/Wave_SimulatorV2/generatedData/npy_masks", model_name = "Unet_3D_5K_w_mask")
-#
+
 
                     
 

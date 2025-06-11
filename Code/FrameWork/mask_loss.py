@@ -2,6 +2,32 @@ from tensorflow.keras.losses import Loss
 import tensorflow as tf
 
 class MaskLoss(Loss):
+    """
+    Custom Keras loss function that applies a mask to the loss calculation, allowing for selective weighting of regions in the input.
+    This loss is designed for tasks where only certain regions of the input (as indicated by a mask) should contribute more heavily to the loss, such as in image segmentation or deformation field estimation.
+    Attributes:
+        Inherits from the Keras `Loss` class.
+    Methods:
+        __init__(**kwargs):
+            Initializes the MaskLoss instance. Accepts additional keyword arguments for compatibility with Keras configuration.
+        call(y_true, y_pred):
+            Computes the masked mean squared error loss between `y_true` and `y_pred`.
+            Args:
+                y_true (tf.Tensor): Ground truth tensor of shape [batch_size, height, width, 3], where the first two channels are the target values and the third channel is the binary mask.
+                y_pred (tf.Tensor): Predicted tensor of shape [batch_size, height, width, 2].
+            Returns:
+                tf.Tensor: Scalar tensor representing the masked mean squared error loss.
+            Details:
+                - The mask (third channel of y_true) is used to focus the loss on specific regions.
+                - The loss is weighted by the ratio of masked to unmasked pixels to balance the contribution of each region.
+                - The squared error is computed only for the first two channels.
+                - The mask is expanded to match the shape of the squared error for element-wise multiplication.
+                - The final loss is the mean of the weighted errors.
+        get_config():
+            Returns the configuration of the loss instance for serialization.
+            Returns:
+                dict: Configuration dictionary.
+    """
     def __init__(self, **kwargs):  # Add kwargs for config compatibility
         super(MaskLoss, self).__init__(**kwargs)
 
@@ -50,6 +76,18 @@ class MaskLoss(Loss):
 
     
 class MAELoss(Loss):
+    """
+    Mean Absolute Error (MAE) Loss class.
+    This loss computes the mean absolute difference between the first two channels of the ground truth tensor (`y_true`) and the predicted tensor (`y_pred`). It is typically used for regression tasks where the goal is to minimize the average absolute error between predictions and targets.
+    Methods
+    -------
+    __init__(**kwargs):
+        Initializes the MAELoss instance with optional keyword arguments.
+    call(y_true, y_pred):
+        Computes the mean absolute error between the first two channels of `y_true` and `y_pred`.
+    get_config():
+        Returns the configuration of the loss instance for serialization.
+    """
     def __init__(self, **kwargs):
         super(MAELoss, self).__init__(**kwargs)
 
