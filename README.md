@@ -1,6 +1,11 @@
 # GP-2025-Strain
 Investigate novel ideas of unsupervised learning methods for calculating regional cardiac function (displacement and strain)
 
+1. [Supervised Models Framework Instructions]
+2. [UnSupervised Models Framework Instructions]
+3. [Simulator Instructions]
+4. [Software Instructions]
+   
 ## Supervised Models Framework Instructions
 
 The `Automate_Training` framework automates the training, evaluation, and visualization of image registration models, particularly for medical imaging applications. It supports multiple U-Net-based architectures, processes displacement and frame data, calculates principal strains, and generates detailed visualizations for simulated and real test datasets. This README provides step-by-step instructions for setting up and using the framework.
