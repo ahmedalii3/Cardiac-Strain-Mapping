@@ -586,19 +586,19 @@ Note: Ensure that FFmpeg is installed on your system for MP4 animation support (
 ### Data Preparation
 1.	Input Files:
 	
- •	Static 2D MRI frame (NumPy .npy file)
-
- •	Corresponding binary myocardium mask (NumPy .npy file)
-
- •	Configurations:
-
- •	config_parameters.json: Controls simulation physics and strain behavior
-
- •	config_generator.json: Controls batch generation (number of patients, slice/frame selection, output paths)
+	 •	Static 2D MRI frame (NumPy .npy file)
+	
+	 •	Corresponding binary myocardium mask (NumPy .npy file)
+	
+	 •	Configurations:
+	
+	 •	config_parameters.json: Controls simulation physics and strain behavior
+	
+	 •	config_generator.json: Controls batch generation (number of patients, slice/frame selection, output paths)
 
 2.	File Naming Convention:
 
- •	MRI frames and masks should follow the format:
+ 	•	MRI frames and masks should follow the format:
 
 patientXXX_frameYY_slice_Z_ACDC.npy
 
@@ -616,7 +616,7 @@ Before running the module, you must configure two JSON files to match your datas
 📄 config_generator.json
 
 This file controls generation logic such as patient ID range, number of cines to generate, and output preferences.
-
+```bash
 {
   "generator": {
     "folder": "/Users/XXX/GP-2025-Strain/Data/ACDC/train_numpy",  // <== Set this to your dataset path
@@ -625,6 +625,7 @@ This file controls generation logic such as patient ID range, number of cines to
     "patients_end": 100,
   }
 }
+```
 
 Make sure the "folder" path points to the directory where your patient .npy files are located.
 
@@ -633,7 +634,7 @@ Make sure the "folder" path points to the directory where your patient .npy file
 📄 config_parameters.json
 
 This file defines simulation parameters like wave speed, target strain, and biomechanical constraints.
-
+```bash
 {
     "num_frames": [15, 25],          // Random range for number of frames in cine
     "wind_speed": [4.0, 6.0],        // Range of wave wind speed
@@ -645,6 +646,7 @@ This file defines simulation parameters like wave speed, target strain, and biom
     }
   
 }
+```
 
 You can modify these ranges to generate different dynamics across cines.
 
@@ -659,44 +661,60 @@ python generator.py
 ```
 
 This executes the following steps:
-	1.	Loads configurations from JSON files.
-	2.	Selects a random patient/frame/slice.
-	3.	Loads and preprocesses the MRI image and myocardium mask.
-	4.	Runs wave-based simulation to generate displacement fields.
-	5.	Applies iterative strain adjustment for biomechanical realism.
-	6.	Transforms displacements into polar coordinates for anatomical accuracy.
-	7.	Warps images and generates output sequences.
-	8.	Saves all data as .npy files and optionally as .mp4 animations.
+1.	Loads configurations from JSON files.
+ 
+2.	Selects a random patient/frame/slice.
+
+3.	Loads and preprocesses the MRI image and myocardium mask.
+
+4.	Runs wave-based simulation to generate displacement fields.
+
+5.	Applies iterative strain adjustment for biomechanical realism.
+
+6.	Transforms displacements into polar coordinates for anatomical accuracy.
+
+7.	Warps images and generates output sequences.
+
+8.	Saves all data as .npy files and optionally as .mp4 animations.
 
 ⸻
 
 ### Output Description
 
 Each run generates the following outputs per simulation:
-	•	Deformed_Frames(.npy): Cine sequence of deformed MRI images.
-	•	Displacement_Fields(.npy): 3D array of X/Y displacements across frames.
-	•	Information dictionary(.npy): Principal strain maps (Ep1, Ep2, Ep3) per frame and the randomized and final simulation settings used for traceability..
-	•	Mask_Animations(.mp4): (optional) Video showing the warped myocardium across time.
-	•	Wave_Animation(.mp4): (optional) Displacement field evolution over time.
+•	Deformed_Frames(.npy): Cine sequence of deformed MRI images.
+
+•	Displacement_Fields(.npy): 3D array of X/Y displacements across frames.
+
+•	Information dictionary(.npy): Principal strain maps (Ep1, Ep2, Ep3) per frame and the randomized and final simulation settings used for traceability..
+
+•	Mask_Animations(.mp4): (optional) Video showing the warped myocardium across time.
+
+•	Wave_Animation(.mp4): (optional) Displacement field evolution over time.
 
 ⸻
 
 ### Troubleshooting
 
-Issue	Solution
 Missing or malformed NumPy files:	Ensure both image and mask are correctly formatted .npy files.
+
 No animation output:	Check if FFmpeg is installed and accessible.
+
 Strain does not converge:	Tune peak strain, radii, or increase the max iterations in config.
+
 Slow processing:	Reduce frame count or grid size.
+
 Artifacts in deformations:	Use smoother fading masks or increase blur in helper.py.
 
 
 ⸻
 
 ### Notes
-	•	Extensibility: You can adapt the module to 3D in the future by expanding the deformation model and applying it slice-by-slice or volume-wise.
-	•	Use in Research: Outputs are directly usable for ML training, strain validation, or as augmentation in segmentation pipelines.
-	•	Randomization: For batch processing and dataset variability, use the generator config to specify number of cines, patient range, and random seeds.
+•	Extensibility: You can adapt the module to 3D in the future by expanding the deformation model and applying it slice-by-slice or volume-wise.
+
+•	Use in Research: Outputs are directly usable for ML training, strain validation, or as augmentation in segmentation pipelines.
+
+•	Randomization: For batch processing and dataset variability, use the generator config to specify number of cines, patient range, and random seeds.
 
 ⸻
 # Software Instructions
