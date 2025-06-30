@@ -117,7 +117,7 @@ The framework expects a specific directory structure for the dataset and real te
   real_test_data/
   ├── patient_4d_frame_1.npy        # Moving image
   ├── patient_4d_frame_13.npy       # Fixed image
-  ├── patient_053_frame_4_slice3_mask.npy  # Mask image
+  ├── patient_4d_frame_13_mask.npy  # Mask image
   ```
 - **Requirements**:
   - Files must be in `.npy` format.
