@@ -574,7 +574,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 3.	Install Dependencies:
 
 ```bash
-pip install numpy scipy matplotlib opencv-python tqdm imageio scikit-image
+pip install -r requirements.txt
 ```
 
 Note: Ensure that FFmpeg is installed on your system for MP4 animation support (used by Matplotlib’s FuncAnimation).
