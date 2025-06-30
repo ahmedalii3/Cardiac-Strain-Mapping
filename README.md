@@ -7,8 +7,6 @@ Investigate novel ideas of unsupervised learning methods for calculating regiona
 3. [Simulator Instructions](#Simulator-Instructions)
 4. [Software Instructions](#Software-Instructions)
 
-To update the README file for the **GP-2025-Strain** project to include your contribution to the unsupervised framework, we need to add a section describing the `VoxelMorph_WithMask_and_WithoutMask&SimulatedData_version_Localization.ipynb` framework, its functionality, setup instructions, and integration with the project. Below is a proposed section to add to the README, tailored to your unsupervised framework based on the provided Jupyter notebook. This section assumes it will be added after the existing "Supervised Models Framework Instructions" section and before the "Software Instructions" section.
-
 ---
 
 # Supervised Models Framework Instructions
