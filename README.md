@@ -526,16 +526,27 @@ Key Features of the Cine Generator:
 ### Prerequisites
 
 •	Python: 3.9 or higher recommended
+
 •	Recommended Hardware: CPU sufficient, GPU not required but can speed up animation rendering
+
 •	Python Dependencies:
+
 •	numpy
+
 •	scipy
+
 •	matplotlib
+
 •	opencv-python
+
 •	tqdm
+
 •	imageio
+
 •	json
+
 •	pathlib
+
 •	scikit-image (for optional mask processing)
 
 You can install the required packages using:
@@ -574,13 +585,20 @@ Note: Ensure that FFmpeg is installed on your system for MP4 animation support (
 
 ### Data Preparation
 1.	Input Files:
-	•	Static 2D MRI frame (NumPy .npy file)
-	•	Corresponding binary myocardium mask (NumPy .npy file)
-	•	Configurations:
-	•	config_parameters.json: Controls simulation physics and strain behavior
-	•	config_generator.json: Controls batch generation (number of patients, slice/frame selection, output paths)
+	
+ •	Static 2D MRI frame (NumPy .npy file)
+
+ •	Corresponding binary myocardium mask (NumPy .npy file)
+
+ •	Configurations:
+
+ •	config_parameters.json: Controls simulation physics and strain behavior
+
+ •	config_generator.json: Controls batch generation (number of patients, slice/frame selection, output paths)
+
 2.	File Naming Convention:
-	•	MRI frames and masks should follow the format:
+
+ •	MRI frames and masks should follow the format:
 
 patientXXX_frameYY_slice_Z_ACDC.npy
 
