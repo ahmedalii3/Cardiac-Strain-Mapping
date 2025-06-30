@@ -561,7 +561,7 @@ pip install -r requirements.txt
 
 ```bash
 git clone <repository-url>
-cd <repository-directory>
+cd <repository-directory>/Code/Cine_Generator/
 ```
 
 2.	(Optional) Create a Virtual Environment:
