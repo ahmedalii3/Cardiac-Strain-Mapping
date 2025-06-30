@@ -3,7 +3,7 @@
 Investigate novel ideas of unsupervised learning methods for calculating regional cardiac function (displacement and strain)
 
 1. [Supervised Models Framework Instructions](#Supervised-Models-Framework-Instructions)
-2. [UnSupervised Models Framework Instructions](#Unsupervised-Models-Framework-Instructions)
+2. [Unsupervised Models Framework Instructions](#Unsupervised-Models-Framework-Instructions)
 3. [Simulator Instructions]
 4. [Software Instructions](#Software-Instructions)
 
