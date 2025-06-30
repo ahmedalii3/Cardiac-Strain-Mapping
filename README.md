@@ -11,7 +11,7 @@ To update the README file for the **GP-2025-Strain** project to include your con
 
 ---
 
-## Supervised Models Framework Instructions
+# Supervised Models Framework Instructions
 
 The `Automate_Training` framework automates the training, evaluation, and visualization of image registration models, particularly for medical imaging applications. It supports multiple U-Net-based architectures, processes displacement and frame data, calculates principal strains, and generates detailed visualizations for simulated and real test datasets. This README provides step-by-step instructions for setting up and using the framework.
 
@@ -255,7 +255,7 @@ Contains trained model checkpoints:
 
 ---
 
-## Unsupervised Models Framework Instructions
+# Unsupervised Models Framework Instructions
 
 The `VoxelMorph_WithMask_and_WithoutMask&SimulatedData_version_Localization` framework implements an unsupervised learning approach for image registration, specifically tailored for calculating regional cardiac function (displacement and strain) using the VoxelMorph library. It supports both masked and unmasked configurations, various kernel sizes, and hyperparameter tuning for the loss function's regularization parameter (lambda). The framework is designed to work with simulated and real cardiac imaging datasets, such as ACDC and Sunnybrook, and includes comprehensive visualization capabilities, including video generation for displacement and strain analysis.
 
@@ -480,7 +480,7 @@ Models/
 
 ---
 
-## Software Instructions
+# Software Instructions
 
 ### Prerequisites
 
