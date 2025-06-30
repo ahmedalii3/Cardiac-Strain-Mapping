@@ -1,0 +1,97 @@
+import os
+import subprocess
+import sys
+import importlib.util
+import torch
+import numpy as np
+import nibabel as nib
+from pathlib import Path
+
+class segment():
+    def __init__(self, dataset_path=None, nifti_folder_path=None, load_only=False):
+        os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '0'
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''
+        os.environ['PYTORCH_MPS_HIGH_WATERMARK_RATIO'] = '0.0'
+        os.environ['PYTORCH_MPS_LOW_WATERMARK_RATIO'] = '0.0'
+        os.environ['nnUNet_USE_MPS'] = '0'
+        os.environ['nnUNet_use_mps'] = '0'
+        os.environ['USE_MPS'] = '0'
+        import torch
+        self.device = torch.device("cpu")
+        torch.set_default_device(self.device)
+        
+        if hasattr(torch.backends, 'mps'):
+            torch.backends.mps.is_available = lambda: False
+            torch.backends.mps.is_built = lambda: False
+        self.dataset_path = dataset_path
+        self.nifti_folder_path = nifti_folder_path
+        self.load_only = load_only
+        
+        self.current_script = Path(__file__)
+        self.imagesTs_path = "/Users/muhannad159/Documents/GP-DICOM-VIEWER/backend_/app/nnUNet/nnUNet_raw/Dataset007_ShortAX/imagesTs"
+
+    def install_nnUnet(self, package="nnunetv2"):
+        if importlib.util.find_spec(package) is None:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        else:
+            print(f"{package} is already installed!")
+
+    def set_global_variables(self):
+        nnUnet_raw_path = "/Users/muhannad159/Documents/GP-DICOM-VIEWER/backend_/app/nnUNet/nnUNet_raw"
+        nnUnet_preprocessed_path = "/Users/muhannad159/Documents/GP-DICOM-VIEWER/backend_/app/nnUNet/nnUNet_preprocessed"
+        nnUnet_results_path = "/Users/muhannad159/Documents/GP-DICOM-VIEWER/backend_/app/nnUNet/nnUNet_trained_models"
+        os.environ["nnUNet_raw"] = str(nnUnet_raw_path)
+        os.environ["nnUNet_preprocessed"] = str(nnUnet_preprocessed_path)
+        os.environ["nnUNet_results"] = str(nnUnet_results_path)
+
+    def predict_masks(self):
+        imagesTs_path = "/Users/muhannad159/Documents/GP-DICOM-VIEWER/backend_/app/nnUNet/nnUNet_raw/Dataset007_ShortAX/imagesTs"
+        pred_nnUnet_path = "/Users/muhannad159/Documents/GP-DICOM-VIEWER/backend_/app/nnUNet/nnUNet_raw/Dataset007_ShortAX/pred_nnUnet"
+        command = [
+            "nnUNetv2_predict",
+            "-i", str(imagesTs_path),
+            "-o", str(pred_nnUnet_path),
+            "-d", "Dataset007_ShortAX",
+            "-c", "2d",
+            "-f", "all",
+            "-chk", "checkpoint_best.pth",
+            "--disable_tta",
+            "-device", "cpu"
+        ]
+        try:
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            print("Error running nnUNetv2_predict:", e)
+
+    def load_dataset(self):
+        case_to_name_dict = {}
+        directories = os.listdir(self.dataset_path)
+        for i, slice in enumerate(directories):
+            id = slice.split("_")[-1]
+            image = np.load(self.dataset_path + "/" + slice, allow_pickle=True)
+            affine = np.eye(4)
+            nifti_image = nib.Nifti1Image(image, affine)
+            if self.load_only:
+                nib.save(nifti_image, os.path.join(self.nifti_folder_path, f"case_{i+1}_0000.nii.gz"))
+            else:
+                nib.save(nifti_image, os.path.join(str(self.imagesTs_path), f"case_{i+1}_0000.nii.gz"))
+            case_to_name_dict[f"case_{i+1}.nii.gz"] = slice
+        np.save(self.current_script.parent / "case_to_name_dict.npy", case_to_name_dict)
+        print("Dataset loaded successfully!")
+
+    def convert_nifti_back_to_numpy(self):
+        mask_path = self.current_script.parent / "npy_masks"
+        mask_path.mkdir(parents=True, exist_ok=True)
+        mask_path = "/Users/muhannad159/Documents/GP-DICOM-VIEWER/backend_/app/nnUNet/nnUNet_raw/Dataset007_ShortAX/pred_nnUnet"
+        case_to_name_dict = np.load(self.current_script.parent / "case_to_name_dict.npy", allow_pickle=True).item()
+        for case in case_to_name_dict:
+            nifti_image = nib.load(mask_path / case)
+            mask = nifti_image.get_fdata()
+            np.save(os.path.join(self.current_script.parent / "npy_masks", case_to_name_dict[case]), mask)
+    
+    def segment_files(self, path):
+        segment = segment(path)
+        segment.load_dataset()
+        segment.install_nnUnet()
+        segment.set_global_variables()
+        segment.predict_masks()
