@@ -94,10 +94,10 @@ class segment ():
 # try segment class
 if __name__ == "__main__":
     segment = segment("/Users/ahmed_ali/Documents/GitHub/GP-2025-Strain/Code/FrameWork/real_test_data")
-    # segment.load_dataset()
-    # segment.install_nnUnet()
-    # segment.set_global_variables()
-    # segment.predict_masks()
-    segment.convert_nifti_back_to_numpy()
+    segment.load_dataset()
+    segment.install_nnUnet()
+    segment.set_global_variables()
+    segment.predict_masks()
+    # segment.convert_nifti_back_to_numpy()
 
     
