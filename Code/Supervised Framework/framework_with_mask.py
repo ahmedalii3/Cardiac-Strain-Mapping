@@ -47,7 +47,23 @@ from ResidualUnet_3Dense_5Kernels import Residual_Unet_3D_5K
 
 
 class Automate_Training():
+    """
+    A class to automate the training, evaluation, and visualization of image registration models.
+    Handles loading of displacement, frame, and mask data, strain calculations, model training,
+    and visualization of results for both simulated and real test datasets with weighted masks.
+    """
     def __init__(self, dataset_path, real_test_data_path, models_list, save_dir, saved_model_dir):
+
+        """
+        Initialize the Automate_Training class with paths and model configurations.
+
+        Args:
+            dataset_path (str): Path to dataset containing 'Displacement', 'Frames', and 'Masks' directories.
+            real_test_data_path (str): Path to real test data (e.g., patient data).
+            models_list (list): List of models to be trained.
+            save_dir (str): Directory to save visualization outputs and results.
+            saved_model_dir (str): Directory to save trained model checkpoints.
+        """
         self.dataset_path = dataset_path
         self.real_test_data_path = real_test_data_path
         self.models_list = models_list
@@ -132,6 +148,11 @@ class Automate_Training():
         return smoothed_mask
     
     def load_data(self):
+        """
+        Load and preprocess data from dataset directory, including masks, splitting into
+        training (90%), validation (5%), and test (5%) sets. Organizes frames into fixed
+        and moving images, displacement fields into x and y components, and applies weighted masks.
+        """
         folders_in_train_simulator_directory = os.listdir(self.dataset_path)
         for i, directory in enumerate(folders_in_train_simulator_directory):
             if directory == "Displacement":
@@ -242,6 +263,17 @@ class Automate_Training():
         
 
     def apply_displacement( self,image, x_displacement, y_displacement):
+        """
+        Apply displacement fields to an image using remapping to generate a warped image.
+
+        Args:
+            image (tf.Tensor): Input image to be warped.
+            x_displacement (np.ndarray): X-component of displacement field.
+            y_displacement (np.ndarray): Y-component of displacement field.
+
+        Returns:
+            np.ndarray: Warped image after applying displacement.
+        """
         # Prepare meshgrid for remap
         height, width, _ = image.shape
         x, y = np.meshgrid(np.arange(width), np.arange(height))
@@ -257,6 +289,16 @@ class Automate_Training():
         displaced_image = cv2.remap(image, x_new, y_new, interpolation=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REFLECT)
         return displaced_image
     def calculate_strain(self, x_displacement, y_displacement):
+        """
+        Calculate principal strains from displacement fields, ensuring strains are within a threshold.
+
+        Args:
+            x_displacement (np.ndarray): X-component of displacement field.
+            y_displacement (np.ndarray): Y-component of displacement field.
+
+        Returns:
+            tuple: Principal strains (Ep1All, Ep2All, Ep3All).
+        """
                 # Example initialization (replace with real data)
         deltaX = 1  # Spatial resolution in X
         deltaY = 1  # Spatial resolution in Y
@@ -551,6 +593,19 @@ class Automate_Training():
         cbar.ax.tick_params(labelsize=10)
 
     def visualise_outputs(self, model_name, history, model, inc_history = True): 
+        """
+        Visualize model outputs, including loss plots, evaluation metrics, and image comparisons
+        for training, test, and real test datasets, incorporating weighted masks.
+
+        Args:
+            model_name (str): Name of the model.
+            history (History): Training history object from model.fit().
+            model (Model): Trained Keras model.
+            inc_history (bool): Whether to include training history plots.
+
+        Returns:
+            None: Saves various plots and evaluation results to the model folder.
+        """
         #Create folder for the model
         #mkdir
         data = {}
@@ -598,17 +653,7 @@ class Automate_Training():
                 real_fixed_image = np.load(os.path.join(self.real_test_data_path, file))
             elif file == "patient_053_frame_4_slice3_mask.npy":
                 mask_image = np.load(os.path.join(self.real_test_data_path, file))
-        # real_moving_image = real_moving_image.astype(np.int16)
-        # real_fixed_image = real_fixed_image.astype(np.int16)
-        # real_moving_image = cv2.normalize(real_moving_image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        # real_fixed_image = cv2.normalize(real_fixed_image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-  
-        # real_moving_image= np.rot90(real_moving_image, 3)
-        # real_moving_image = np.fliplr(real_moving_image)
-        # real_fixed_image = np.rot90(real_fixed_image,3)
-        # real_fixed_image = np.fliplr(real_fixed_image)
-        # mask_image = np.rot90(mask_image,3)
-        # mask_image = np.fliplr(mask_image)
+     
 
         data['moving'] = real_moving_image
         data['fixed'] = real_fixed_image
@@ -938,7 +983,17 @@ class Automate_Training():
         
 
     def train_models(self, num_epochs = 10, batch_size = 32):
-       
+        """
+            Train multiple models on the dataset with specified epochs and batch size, using
+            custom loss and metric functions (MaskLoss, MAELoss) for weighted mask integration.
+
+            Args:
+                num_epochs (int): Number of training epochs (default: 10).
+                batch_size (int): Batch size for training (default: 32).
+
+            Returns:
+                None: Trains models and saves results and visualizations.
+            """
         for model in self.models_list:
             
             optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, clipvalue=1.0)
