@@ -480,11 +480,6 @@ Models/
 
 ---
 # Simulator Instructions
-Great — here’s the updated README with a new section titled Configuration Setup that explains how to edit the JSON files to fit your dataset path and simulation preferences.
-
-⸻
-
-Simulator Instructions
 
 The Cine Image Generation Module transforms static 2D cardiac MRI frames and myocardium masks into dynamic cine sequences that simulate realistic cardiac motion. It uses wave-based simulation (via the Phillips spectrum), polar coordinate transformations, and biomechanically inspired strain modeling to generate deformed sequences useful for motion analysis, strain computation, and model validation.
 
