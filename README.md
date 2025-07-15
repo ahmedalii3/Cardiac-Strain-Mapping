@@ -1,6 +1,56 @@
-# GP-2025-Strain
+# Unsupervised Deep-Learning Cardiac MRI Displacement Field and Strain Mapping
 
-Investigate novel ideas of unsupervised learning methods for calculating regional cardiac function (displacement and strain)
+## Project Overview
+
+This repository hosts the codebase for our graduation project at Cairo University’s Systems and Biomedical Engineering Department, focused on advancing myocardial strain estimation using deep learning applied to standard cine MRI sequences. Myocardial strain is a critical biomarker for diagnosing cardiovascular diseases, revealing subtle myocardial deformations that precede global functional changes. Traditional methods like feature tracking suffer from limited robustness, while specialized sequences like tagging or DENSE are not widely available. Our project addresses these challenges by developing a novel deep learning framework that combines supervised and unsupervised learning pipelines with a synthetic cine MRI generator, delivering accurate and clinically interpretable strain maps. A user-friendly web application further enhances accessibility, enabling clinicians to perform automated strain analysis with intuitive visualizations, such as AHA 17-segment bull’s eye plots, to support diagnosis and treatment planning.
+
+### Objectives
+- Develop a robust deep learning framework to estimate myocardial strain from standard cine MRI, eliminating the need for specialized imaging sequences.
+- Create a synthetic cine MRI generator to produce physiologically realistic sequences with ground truth deformation fields, addressing the scarcity of labeled data.
+- Build a web application to streamline strain analysis and visualization, bridging research and clinical practice.
+
+### Key Features
+- **Synthetic Cine MRI Generator**: Transforms static 2D MRI frames into dynamic sequences with pixel-wise displacement fields and strain maps, using a wave-based model adapted from the Phillips spectrum.
+- **Supervised Learning Pipeline**: Utilizes a modified U-Net with residual blocks and myocardial mask-weighted loss for precise displacement field prediction.
+- **Unsupervised Learning Pipeline**: Employs a VoxelMorph-based architecture for deformable image registration, trained with image similarity and smoothness regularization.
+- **Web Application**: A React.js and FastAPI-based platform featuring a Cornerstone.js DICOM viewer, MONAI-powered heart localization, interactive strain maps, and AHA 17-segment bull’s eye plots.
+- **Clinical Visualizations**: Generates strain maps and bull’s eye plots (standard and ring formats) with downloadable DICOM series and PDF reports for clinical use.
+
+## Methodology
+
+### Synthetic Cine MRI Generator
+The generator converts static MRI frames and myocardium masks into temporally resolved cine sequences using a wave-based displacement model. It incorporates polar coordinate transformations and iterative strain regulation to ensure biomechanical realism. Outputs include:
+- Multi-frame cine sequences with realistic cardiac motion.
+- Pixel-wise displacement fields and principal strain maps as ground truth.
+- Configurable parameters (e.g., peak strain, frame count) for inter-patient variability.
+
+### Supervised Learning
+The supervised pipeline, implemented via the `Automate_Training` framework, uses a modified U-Net with residual blocks to predict displacement fields from image pairs. Key aspects include:
+- Preprocessing with spatial normalization (1 mm/pixel), z-score intensity normalization, and MONAI-based heart localization.
+- Myocardial mask-weighted mean squared error (MSE) loss to prioritize accuracy in the myocardium.
+- Evaluation on synthetic data, achieving MSE as low as 0.0016.
+
+### Unsupervised Learning
+The unsupervised pipeline, built on the VoxelMorph library, performs deformable image registration without ground truth displacement fields. Highlights include:
+- Percentile-based intensity normalization and temporal frame pairing for robust training.
+- Testing of multiple kernel configurations (default 3x3, first5, first7_second5) and smoothness regularization weights (λ=0.1 to 1.0).
+- Best performance with default 3x3 kernel and λ=0.1 (MSE: 0.052488 on synthetic data).
+- Qualitative evaluation on real datasets (ACDC, Sunnybrook) for anatomical plausibility.
+
+### Web Application
+The web application integrates the pipeline for clinical use, featuring:
+- **DICOM Viewer**: Built with Cornerstone.js for visualizing cine MRI series and metadata.
+- **Heart Localization**: Automated using MONAI for accurate preprocessing.
+- **Strain Mapping**: Interactive strain maps with color overlays and DICOM export.
+- **Bull’s Eye Plots**: AHA 17-segment visualizations with PDF reports for clinical interpretation.
+
+## Results
+
+- **Synthetic Data**: Supervised models with myocardial masking achieved MSE as low as 0.0016, with robust strain estimation (MAE ~0.02 in low negative strain regions).
+- **Real Data**: Qualitative evaluation on ACDC and Sunnybrook datasets demonstrated accurate alignment and physiologically plausible strain maps.
+- **Clinical Utility**: The web app provides intuitive strain visualizations and bull’s eye plots, streamlining diagnostic workflows for cardiologists.
+
+## Setup
 
 1. [Supervised Models Framework Instructions](#Supervised-Models-Framework-Instructions)
 2. [Unsupervised Models Framework Instructions](#Unsupervised-Models-Framework-Instructions)
@@ -791,3 +841,21 @@ npm install
 ```bash
 npm run dev
 ```
+
+## Acknowledgments
+
+This project was completed as part of our graduation requirements at Cairo University, under the supervision of **Dr. Tamer Basha**. We extend our deepest gratitude to our mentors at the NIH, **Dr. Khaled Abd-Elmoniem** and **Dr. Ahmed Abdelfadeel**, for their invaluable guidance. Special thanks to our team: **Ahmed Mohamed Ali**, **Ali Badran**, **Osama M. Badawi**, and **Muhannad Abdallah** for their dedication and collaboration.
+
+## Future Work
+
+- Incorporate region-aware weighting masks in unsupervised models to enhance myocardial focus.
+- Extend the framework to 3D/4D cine MRI for improved through-plane motion handling.
+- Prepare findings for publication to contribute to the medical imaging community.
+
+## Contact
+
+For questions or collaboration inquiries, please connect with us on LinkedIn:
+- [Ahmed Mohamed Ali](https://www.linkedin.com/in/ahmed-ali-b4baa9203/)
+- [Ali Badran](https://www.linkedin.com/in/ali-badran-716ali/)
+- [Osama M. Badawi](https://www.linkedin.com/in/osama-m-badawi-52369722a/)
+- [Muhannad Abdallah](https://www.linkedin.com/in/muhannad-abdallah/)
